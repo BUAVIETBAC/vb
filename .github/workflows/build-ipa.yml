@@ -49,7 +49,7 @@ jobs:
             s.author = 'Autu'
             s.source = { :git => 'https://autu.local/autu-browser.git', :tag => s.version.to_s }
             s.source_files = 'ios/Sources/**/*.{swift,h,m,c,cc,mm,cpp}'
-            s.ios.deployment_target = '14.0'
+            s.ios.deployment_target = '13.0'
             s.dependency 'Capacitor'
             s.swift_version = '5.1'
           end
@@ -268,11 +268,15 @@ jobs:
                           if let e = e { call.resolve(["error": e]) } else { call.resolve(["value": v ?? ""]) }
                       }
                       let wrapped = "const __r = await (async()=>{" + code + "\n})(); return (__r===undefined||__r===null)?'':JSON.stringify(__r);"
-                      web.callAsyncJavaScript(wrapped, arguments: [:], in: nil, in: .page) { res in
-                          switch res {
-                          case .success(let v): finish((v as? String) ?? "", nil)
-                          case .failure(let err): finish(nil, err.localizedDescription)
+                      if #available(iOS 14.0, *) {
+                          web.callAsyncJavaScript(wrapped, arguments: [:], in: nil, in: .page) { res in
+                              switch res {
+                              case .success(let v): finish((v as? String) ?? "", nil)
+                              case .failure(let err): finish(nil, err.localizedDescription)
+                              }
                           }
+                      } else {
+                          finish(nil, "CAN_IOS_14")
                       }
                       DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { finish(nil, "TIMEOUT") }
                   }
