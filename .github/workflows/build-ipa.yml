@@ -9,12 +9,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with:
+          node-version: 20
       - name: Tao project
         run: |
           mkdir -p www
           cat > package.json <<'AUTU_EOF'
-          {"name": "autu-ios", "version": "2.0.0", "private": true, "dependencies": {"@capacitor/core": "^6.0.0", "@capacitor/ios": "^6.0.0", "cordova-plugin-inappbrowser": "^6.0.0"}, "devDependencies": {"@capacitor/cli": "^6.0.0"}}
+          {"name": "autu-ios", "version": "2.2.0", "private": true, "dependencies": {"@capacitor/core": "^6.0.0", "@capacitor/ios": "^6.0.0", "cordova-plugin-inappbrowser": "^6.0.0"}, "devDependencies": {"@capacitor/cli": "^6.0.0"}}
           AUTU_EOF
           cat > capacitor.config.json <<'AUTU_EOF'
           {"appId": "com.autu.facebookpro", "appName": "Autu Pro", "webDir": "www", "backgroundColor": "#0B1220", "server": {"cleartext": true, "allowNavigation": ["*"]}}
@@ -35,23 +36,34 @@ jobs:
           .tg{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--b)}.ok{background:#14532D}.wt{background:#78350F}.er{background:#7F1D1D}
           nav{display:flex;background:var(--c);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom)}
           nav button{background:none;color:var(--m);border-radius:0;margin:0;font-size:12px}nav button.on{color:var(--a)}
+          select{background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:10px;padding:10px;margin:4px 0;font-size:14px;width:100%}details summary{font-weight:600}
           pre{white-space:pre-wrap;font:11px/1.5 monospace;color:var(--m);margin:0}.h{display:none}#st{padding:0 14px;color:var(--m);font-size:12px}
           </style></head><body>
-          <h1>Autu • Nhóm Facebook</h1><div id="st">Sẵn sàng</div>
+          <h1>Autu • Nhóm Facebook <small style="color:#8A9BB4;font-size:11px;font-weight:400">build __BUILD__</small></h1><div id="st">Sẵn sàng</div>
           <main>
-          <section id="p0"><div class="card"><input id="kw" placeholder="Từ khóa nhóm (vd: búa phá đá)"><button onclick="A.find()">🔎 Tìm nhóm</button>
-          <small>Facebook mở trong cửa sổ riêng: đăng nhập 1 lần, app tự thao tác. Nút "Dừng" ở góc cửa sổ Facebook.</small></div>
+          <section id="p0"><div class="card"><b id="sum">0 nhóm</b>
+          <div class="row"><button onclick="A.sync()">⟳ Đồng bộ nhóm của tôi</button><button class="g" onclick="A.find()">🔎 Tìm nhóm</button></div>
+          <input id="kw" placeholder="Từ khóa tìm nhóm mới (vd: búa phá đá)">
+          <input id="q" placeholder="Lọc theo tên nhóm..." oninput="R()">
+          <div class="row"><select id="fl" onchange="R()"><option>Tất cả</option><option>Đã vào</option><option>Chờ duyệt</option><option>Chưa vào</option><option>Lỗi</option></select>
+          <select id="so" onchange="R()"><option>Thành viên ↓</option><option>Tên A-Z</option></select></div></div>
           <div class="card"><div class="row"><button class="g" onclick="A.sel(1)">Chọn hết</button><button class="g" onclick="A.sel(0)">Bỏ chọn</button><button class="g" onclick="A.del()">Xóa chọn</button></div>
-          <button onclick="A.join()">➕ Tham gia nhóm đã chọn</button><div id="gl"></div></div></section>
+          <button onclick="A.join()">➕ Tham gia nhóm đã chọn</button><div id="gl"></div></div>
+          <details class="card"><summary>Thêm / Import link nhóm</summary><textarea id="imp" placeholder="Mỗi dòng 1 link nhóm (facebook.com/groups/...)"></textarea><button class="g" onclick="A.imp()">Nhập vào danh mục</button></details></section>
           <section id="p1" class="h"><div class="card"><small>Hỗ trợ xoay vòng: {Chào|Xin chào} anh/chị — mỗi nhóm một biến thể, tránh trùng nội dung.</small>
           <textarea id="tx" placeholder="Nội dung bài đăng"></textarea><button onclick="A.post()">📝 Đăng vào nhóm đã vào + đã chọn</button></div></section>
           <section id="p2" class="h"><div class="card"><input id="su" placeholder="Link bài cần chia sẻ (https://facebook.com/...)"><button onclick="A.share()">↪ Chia sẻ vào nhóm đã vào + đã chọn</button></div></section>
-          <section id="p3" class="h"><div class="card"><div class="row"><div>Giới hạn/ngày — vào nhóm<input id="lj" type="number"></div><div>Đăng<input id="lp" type="number"></div><div>Chia sẻ<input id="ls" type="number"></div></div>
+          <section id="p3" class="h"><div class="card"><b id="acs">Chưa kiểm tra đăng nhập</b>
+          <small>Facebook mở trong cửa sổ riêng của app. Đăng nhập 1 lần, phiên được giữ cho các lần sau (kể cả mã 2 lớp).</small>
+          <input id="an" placeholder="Tên gợi nhớ tài khoản"><button onclick="A.login()">🔑 Đăng nhập Facebook</button>
+          <button class="g" onclick="A.chk()">✓ Kiểm tra đã đăng nhập chưa</button><button class="r" onclick="A.logout()">Đổi tài khoản / xóa phiên</button>
+          <small>iPhone giữ 1 tài khoản tại một thời điểm (không chạy nhiều profile cùng lúc như bản máy tính). Muốn đổi: bấm "Đổi tài khoản" rồi đăng nhập tài khoản khác.</small></div></section>
+          <section id="p4" class="h"><div class="card"><div class="row"><div>Giới hạn/ngày — vào nhóm<input id="lj" type="number"></div><div>Đăng<input id="lp" type="number"></div><div>Chia sẻ<input id="ls" type="number"></div></div>
           <div class="row"><div>Nghỉ tối thiểu (giây)<input id="d1" type="number"></div><div>Nghỉ tối đa<input id="d2" type="number"></div></div>
           <button class="g" onclick="A.save()">Lưu cài đặt</button><small id="cnt"></small></div>
           <div class="card"><pre id="lg"></pre></div></section>
           </main>
-          <nav><button class="on" onclick="T(0)">Nhóm</button><button onclick="T(1)">Đăng bài</button><button onclick="T(2)">Chia sẻ</button><button onclick="T(3)">Cài đặt</button></nav>
+          <nav><button class="on" onclick="T(0)">Nhóm</button><button onclick="T(1)">Chiến dịch</button><button onclick="T(2)">Chia sẻ</button><button onclick="T(3)">Tài khoản</button><button onclick="T(4)">Lịch sử</button></nav>
           <script>
           const $=s=>document.querySelector(s),W=ms=>new Promise(r=>setTimeout(r,ms)),K='autu_v1';
           let S=Object.assign({groups:[],text:'',lim:{j:10,p:15,s:10},dl:[60,150],cnt:{},log:[]},JSON.parse(localStorage.getItem(K)||'{}'));
@@ -60,9 +72,18 @@ jobs:
           const day=()=>new Date().toISOString().slice(0,10);
           function cnt(k){if(S.cnt.d!==day())S.cnt={d:day(),j:0,p:0,s:0};return S.cnt[k]}
           function L(m){S.log.push(new Date().toLocaleTimeString('vi')+' '+m);S.log=S.log.slice(-150);sv();$('#lg').textContent=S.log.slice(-60).join('\n');$('#st').textContent=m}
-          function T(i){document.querySelectorAll('nav button').forEach((b,j)=>b.classList.toggle('on',i==j));for(let j=0;j<4;j++)$('#p'+j).classList.toggle('h',i!=j);if(i==3)R()}
-          function R(){const g=$('#gl');g.innerHTML=S.groups.map((x,i)=>`<label class="it"><input type="checkbox" ${x.c?'checked':''} onchange="S.groups[${i}].c=this.checked;sv()"><div><b>${x.name}</b><small>${x.url}</small></div><span class="tg ${x.s=='ĐÃ VÀO'?'ok':x.s=='CHỜ DUYỆT'?'wt':x.s&&x.s!='MỚI'?'er':''}">${x.s||'MỚI'}</span></label>`).join('')||'<small>Chưa có nhóm. Hãy tìm nhóm.</small>';
-          $('#tx').value=S.text;$('#lj').value=S.lim.j;$('#lp').value=S.lim.p;$('#ls').value=S.lim.s;$('#d1').value=S.dl[0];$('#d2').value=S.dl[1];$('#cnt').textContent=`Hôm nay: vào ${cnt('j')} • đăng ${cnt('p')} • chia sẻ ${cnt('s')}`;$('#lg').textContent=S.log.slice(-60).join('\n')}
+          function T(i){document.querySelectorAll('nav button').forEach((b,j)=>b.classList.toggle('on',i==j));for(let j=0;j<5;j++)$('#p'+j).classList.toggle('h',i!=j);if(i>=3)R()}
+          function mem(t){t=(t||'').trim();if(!t)return 0;const k=/k$/i.test(t),m=/m$/i.test(t),n=t.replace(/[kKmM\s]/g,'');if(k||m)return Math.round(parseFloat(n.replace(',','.'))*(k?1e3:1e6))||0;return parseInt(n.replace(/[.,]/g,''))||0}
+          const fm=n=>!n?'—':n>=1e6?(n/1e6).toFixed(1).replace('.',',')+'M':n>=1e3?(n/1e3).toFixed(1).replace('.',',')+'K':n;
+          const slug=x=>(x.s||'MỚI');
+          function R(){const G=S.groups,f=$('#fl').value,q=($('#q').value||'').toLowerCase();
+           let ix=G.map((g,i)=>i).filter(i=>{const g=G[i],s=slug(g);return(!q||g.name.toLowerCase().includes(q))&&(f=='Tất cả'||(f=='Đã vào'&&s=='ĐÃ VÀO')||(f=='Chờ duyệt'&&s=='CHỜ DUYỆT')||(f=='Chưa vào'&&s=='MỚI')||(f=='Lỗi'&&!['ĐÃ VÀO','CHỜ DUYỆT','MỚI'].includes(s)))});
+           ix.sort($('#so').value=='Tên A-Z'?(a,b)=>G[a].name.localeCompare(G[b].name):(a,b)=>(G[b].m||0)-(G[a].m||0));
+           const c=s=>G.filter(g=>slug(g)==s).length;
+           $('#sum').textContent=`${G.length} nhóm • hiển thị ${ix.length} • Đã vào ${c('ĐÃ VÀO')} • Chưa vào ${c('MỚI')} • Chờ duyệt ${c('CHỜ DUYỆT')}`;
+           $('#gl').innerHTML=ix.slice(0,300).map((i,n)=>{const x=G[i],s=slug(x);return`<label class="it"><input type="checkbox" ${x.c?'checked':''} onchange="S.groups[${i}].c=this.checked;sv()"><div><b>${n+1}. ${x.name}</b><small>${fm(x.m)} thành viên • ${x.url.replace('https://www.facebook.com/groups/','')}</small></div><span class="tg ${s=='ĐÃ VÀO'?'ok':s=='CHỜ DUYỆT'?'wt':s!='MỚI'?'er':''}">${s}</span></label>`}).join('')||'<small>Chưa có nhóm. Bấm "Đồng bộ nhóm của tôi".</small>';
+           $('#tx').value=S.text;$('#lj').value=S.lim.j;$('#lp').value=S.lim.p;$('#ls').value=S.lim.s;$('#d1').value=S.dl[0];$('#d2').value=S.dl[1];$('#cnt').textContent=`Hôm nay: vào ${cnt('j')} • đăng ${cnt('p')} • chia sẻ ${cnt('s')}`;$('#lg').textContent=S.log.slice(-60).join('\n');
+           $('#acs').textContent=S.acc?(S.acc.ok?'● Đã đăng nhập Facebook':'● Chưa đăng nhập')+(S.acc.n?' • '+S.acc.n:''):'Chưa kiểm tra đăng nhập'}
           /* ---- mã chạy TRONG trang Facebook ---- */
           const HELP=`(()=>{if(window.__A)return;const A=window.__A={sl:ms=>new Promise(r=>setTimeout(r,ms)),
           vis:e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length),
@@ -72,6 +93,7 @@ jobs:
           blocked(){return /(tạm thời bị chặn|temporarily blocked|bị hạn chế|you can.t use this feature|đã bị chặn)/i.test(document.body.innerText.slice(0,4000))},
           ov(t){let d=document.getElementById('__ov');if(!d){d=document.createElement('div');d.id='__ov';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#0068FF;color:#fff;font:12px sans-serif;padding:4px 8px;text-align:center';document.body.appendChild(d)}d.textContent=t}}})();1`;
           const TASKS={
+          sync:`const out={};for(let i=0;i<30;i++){const n0=Object.keys(out).length;document.querySelectorAll('a[href*="/groups/"]').forEach(a=>{const m=a.href.match(/\\/groups\\/([\\w.\\-]+)\\/?(\\?|$)/);if(!m||/^(feed|discover|search|joins|create|notifications)$/.test(m[1]))return;const n=(a.innerText||'').split('\\n').map(s=>s.trim()).filter(s=>s.length>2)[0];if(!n)return;let c=a,t='';for(let k=0;k<4&&c;k++){c=c.parentElement;if(c&&/(thành viên|members)/i.test(c.innerText||'')){t=c.innerText;break}}const mm=t.match(/([\\d.,]+\\s*[KkMm]?)\\s*(thành viên|members)/i);out[m[1]]=Object.assign(out[m[1]]||{},{name:n,url:'https://www.facebook.com/groups/'+m[1],m:mm?mm[1]:''})});window.scrollBy(0,3000);await A.sl(1200);if(Object.keys(out).length===n0&&i>3)break}return Object.values(out)`,
           find:`const out={};for(let i=0;i<7;i++){document.querySelectorAll('a[href*="/groups/"]').forEach(a=>{const m=a.href.match(/\\/groups\\/([\\w.\\-]+)\\/?(\\?|$)/);if(!m||/^(feed|discover|search|joins|create)$/.test(m[1]))return;const n=(a.innerText||'').split('\\n').map(s=>s.trim()).filter(s=>s.length>2)[0];if(n&&!out[m[1]])out[m[1]]={name:n,url:'https://www.facebook.com/groups/'+m[1]}});window.scrollBy(0,2500);await A.sl(1300)}return Object.values(out)`,
           join:`if(A.blocked())return'BỊ CHẶN';if(A.find(/^(Đã tham gia|Joined)$/))return'ĐÃ VÀO';if(A.find(/(Hủy yêu cầu|Cancel request|Đã gửi yêu cầu|Requested)/))return'CHỜ DUYỆT';
           if(!await A.click(/^(Tham gia nhóm|Join group|Tham gia|Join)$/,7000))return'KHÔNG THẤY NÚT';await A.sl(2500);if(A.blocked())return'BỊ CHẶN';
@@ -88,10 +110,12 @@ jobs:
           const nm=__NAME__.toLowerCase();const it=[...document.querySelectorAll('[role=button],[role=option],[role=radio],[role=listitem],div[tabindex]')].find(e=>A.vis(e)&&(e.innerText||'').toLowerCase().includes(nm.slice(0,18)));
           if(!it)return'KHÔNG THẤY NHÓM';it.click();await A.sl(1500);if(!await A.click(/^(Đăng|Post|Chia sẻ ngay|Share now)$/,6000))return'KHÔNG THẤY NÚT ĐĂNG';await A.sl(4500);return A.blocked()?'BỊ CHẶN':'OK'`};
           /* ---- điều khiển cửa sổ Facebook ---- */
-          function open(){return new Promise((ok,no)=>{if(!(window.cordova&&cordova.InAppBrowser))return no('Thiếu plugin trình duyệt');
-           ref=cordova.InAppBrowser.open('https://www.facebook.com/','_blank','location=no,toolbar=yes,closebuttoncaption=Dừng,hidenavigationbuttons=yes,toolbarposition=top');
+          function open(url,xo){return new Promise((ok,no)=>{if(!(window.cordova&&cordova.InAppBrowser))return no('Thiếu plugin trình duyệt');
+           ref=cordova.InAppBrowser.open(url||'https://www.facebook.com/','_blank','location=no,toolbar=yes,hidenavigationbuttons=yes,toolbarposition=top,'+(xo||'closebuttoncaption=Dừng'));
            ref.addEventListener('loadstart',()=>loaded=false);ref.addEventListener('loadstop',()=>loaded=true);ref.addEventListener('exit',()=>{stop=true;ref=null});setTimeout(ok,4500)})}
           const X=c=>new Promise(r=>ref?ref.executeScript({code:c},v=>r(v&&v[0])):r(null));
+          const CHK=`(()=>{const u=location.href;return(/login|checkpoint|recover/.test(u)||document.querySelector('input[name=pass],input[type=password]'))?'OUT':'IN'})()`;
+          async function needLogin(){for(let i=0;i<30&&!loaded;i++)await W(500);await W(1500);return (await X(CHK))!=='IN'}
           async function nav(u){loaded=false;await X(`location.href=${JSON.stringify(u)};1`);for(let i=0;i<40&&!loaded;i++)await W(500);await W(2500);await X(HELP)}
           async function run(body,ms=70000){await X(`window.__r=undefined;(async()=>{try{window.__r=await(async()=>{${body}})()}catch(e){window.__r='LỖI '+e}})();1`);
            const end=Date.now()+ms;while(Date.now()<end&&!stop){await W(900);const v=await X('JSON.stringify(window.__r===undefined?null:window.__r)');if(v&&v!=='null')return JSON.parse(v)}return stop?'ĐÃ DỪNG':'HẾT GIỜ'}
@@ -99,7 +123,7 @@ jobs:
           async function job(name,list,key,fn){if(busy)return alert('Đang chạy tác vụ khác');if(!list.length)return alert('Chưa chọn nhóm phù hợp');
            const cap=S.lim[key];if(cnt(key=='j'?'j':key=='p'?'p':'s')>=cap)return alert('Hôm nay đã đủ giới hạn '+cap);
            if(!confirm(`${name}: ${list.length} nhóm (nghỉ ${S.dl[0]}-${S.dl[1]}s/nhóm). Facebook mở ra — nếu cần hãy đăng nhập trước, rồi để màn hình sáng.`))return;
-           busy=true;stop=false;try{await open();try{await W(1500);await window.navigator.wakeLock?.request('screen')}catch(e){}
+           busy=true;stop=false;try{await open();if(await needLogin())throw'Chưa đăng nhập Facebook (vào tab Tài khoản)';try{await W(1500);await window.navigator.wakeLock?.request('screen')}catch(e){}
             for(const g of list){if(stop)break;const ck=key;if(cnt(ck)>=cap){L('Đủ giới hạn ngày');break}
              L(name+': '+g.name);await X(`window.__A&&__A.ov(${JSON.stringify(name+': '+g.name)})`);const r=await fn(g);L(' → '+r);
              if(r=='BỊ CHẶN'){L('Facebook chặn tính năng — DỪNG, nghỉ vài giờ');stop=true;break}
@@ -107,9 +131,16 @@ jobs:
            }catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;L('Hoàn tất');R()}}
           const pick=f=>S.groups.filter(g=>g.c&&f(g));
           const A={
+           async sync(){if(busy)return;busy=true;stop=false;try{await open();if(await needLogin())throw'Chưa đăng nhập Facebook (vào tab Tài khoản)';L('Đồng bộ nhóm của bạn...');await nav('https://www.facebook.com/groups/joins/');
+            const r=await run(TASKS.sync,150000);let n=0,u=0;if(Array.isArray(r))for(const g of r){const e=S.groups.find(x=>x.url.toLowerCase()==g.url.toLowerCase()),m=mem(g.m);if(e){e.name=g.name;if(m)e.m=m;e.s='ĐÃ VÀO';u++}else{S.groups.push({name:g.name,url:g.url,m,s:'ĐÃ VÀO'});n++}}
+            L('Đồng bộ xong: '+(Array.isArray(r)?r.length:0)+' nhóm • mới '+n+' • cập nhật '+u)}catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;sv();R()}},
+           imp(){let n=0;($('#imp').value.match(/facebook\.com\/groups\/[\w.\-]+/g)||[]).forEach(x=>{const u='https://www.'+x;if(!S.groups.some(g=>g.url.toLowerCase()==u.toLowerCase())){S.groups.push({name:x.split('/').pop(),url:u,m:0,s:'MỚI'});n++}});$('#imp').value='';sv();R();L('Đã nhập '+n+' nhóm')},
+           login(){if(busy)return;if(!(window.cordova&&cordova.InAppBrowser))return alert('Thiếu plugin trình duyệt');const w=cordova.InAppBrowser.open('https://www.facebook.com/login','_blank','location=no,toolbar=yes,closebuttoncaption=Xong,toolbarposition=top');w.addEventListener('exit',()=>setTimeout(()=>A.chk(),600))},
+           async chk(){if(busy)return;busy=true;stop=false;try{await open();const out=await needLogin();S.acc={ok:!out,n:$('#an').value||(S.acc&&S.acc.n)||'',t:Date.now()};L(out?'Chưa đăng nhập Facebook':'Đã đăng nhập Facebook ✓')}catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;sv();R()}},
+           logout(){if(busy||!confirm('Xóa phiên đăng nhập Facebook trên app để đăng nhập tài khoản khác?'))return;S.acc={ok:false,n:''};sv();cordova.InAppBrowser.open('https://www.facebook.com/','_blank','location=no,toolbar=yes,clearcache=yes,clearsessioncache=yes,closebuttoncaption=Xong,toolbarposition=top');R()},
            sel(v){S.groups.forEach(g=>g.c=!!v);sv();R()},del(){S.groups=S.groups.filter(g=>!g.c);sv();R()},
            save(){S.text=$('#tx').value;S.lim={j:+$('#lj').value||10,p:+$('#lp').value||15,s:+$('#ls').value||10};S.dl=[+$('#d1').value||60,Math.max(+$('#d2').value||150,+$('#d1').value||60)];sv();alert('Đã lưu')},
-           async find(){const k=$('#kw').value.trim();if(!k||busy)return;busy=true;stop=false;try{await open();L('Tìm nhóm: '+k);await nav('https://www.facebook.com/search/groups/?q='+encodeURIComponent(k));
+           async find(){const k=$('#kw').value.trim();if(!k||busy)return;busy=true;stop=false;try{await open();if(await needLogin())throw'Chưa đăng nhập Facebook (vào tab Tài khoản)';L('Tìm nhóm: '+k);await nav('https://www.facebook.com/search/groups/?q='+encodeURIComponent(k));
             const r=await run(TASKS.find,60000);let n=0;if(Array.isArray(r))for(const g of r)if(!S.groups.some(x=>x.url==g.url)){S.groups.push({...g,s:'MỚI'});n++}L('Tìm thấy '+(Array.isArray(r)?r.length:0)+' • thêm mới '+n)}catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;sv();R()}},
            join(){job('Tham gia',pick(g=>g.s!='ĐÃ VÀO'&&g.s!='CHỜ DUYỆT'),'j',async g=>{await nav(g.url);const r=await run(TASKS.join);g.s=r;return r})},
            post(){A.save();if(!S.text.trim())return alert('Nhập nội dung bài');job('Đăng bài',pick(g=>g.s=='ĐÃ VÀO'),'p',async g=>{await nav(g.url);
@@ -119,6 +150,8 @@ jobs:
           R();
           </script></body></html>
           AUTU_EOF
+          sed -i '' "s/__BUILD__/${GITHUB_RUN_NUMBER}/" www/index.html
+          grep -c "Đồng bộ nhóm của tôi" www/index.html
       - run: npm install
       - run: npx cap add ios
       - name: Cho phep HTTP
@@ -138,6 +171,8 @@ jobs:
         run: |
           mkdir -p Payload
           cp -R ios/App/build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -qr Autu.ipa Payload
+          zip -qr Autu-build-${{ github.run_number }}.ipa Payload
       - uses: actions/upload-artifact@v4
-        with: { name: Autu-ipa, path: Autu.ipa }
+        with:
+          name: Autu-ipa-build-${{ github.run_number }}
+          path: Autu-build-${{ github.run_number }}.ipa
