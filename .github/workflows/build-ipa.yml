@@ -623,18 +623,21 @@ jobs:
           let ed=null;for(let i=0;i<12&&!ed;i++){dg=A.dlg()||dg;ed=A.editor(dg);if(!ed)await A.sl(500)}
           if(!ed)return{r:'KHÔNG THẤY KHUNG GÕ',d:A.labels(24)};
           const PV='[aria-label*="Xóa bản xem trước"],[aria-label*="Remove preview"],[aria-label="Xóa tệp đính kèm"],[aria-label="Remove attachment"]';
-          const mh=()=>{let m=dg.scrollHeight||0;dg.querySelectorAll('div').forEach(d=>{if(d.scrollHeight>m)m=d.scrollHeight});return m};const h0=mh();const hasPv=()=>mh()-h0>140||!!dg.querySelector(PV);
+          const mh=()=>{let m=dg.scrollHeight||0;dg.querySelectorAll('div').forEach(d=>{if(d.scrollHeight>m)m=d.scrollHeight});return m};const im=()=>[...dg.querySelectorAll('img')].filter(x=>A.vis(x)&&x.getBoundingClientRect().width>80).length;
+          const h0=mh(),i0=im();const snap=()=>({h:mh(),i:im(),pv:!!dg.querySelector(PV)});const hasPv=()=>{const s=snap();return s.pv||s.i>i0||s.h-h0>60};
           if(!await A.fill(ed,o.text))return{r:'KHÔNG NHẬP ĐƯỢC NỘI DUNG',d:'khung gõ không nhận chữ'};
           await A.sl(1500+(o.prev||0)*1000);dg=A.dlg()||dg;ed=A.editor(dg)||ed;
           let hid='';
-          if(o.hide&&o.hurl){if(!hasPv())await A.sl(3000);
-          if(!hasPv()){hid='giữ link (chưa thấy khung xem trước)'}else{
-          const U=A.norm(o.hurl).slice(0,20),has=()=>A.norm(ed.innerText||ed.textContent||'').includes(U);
-          ed.focus();await A.sl(300);try{const s=window.getSelection();s.selectAllChildren(ed);s.collapseToEnd()}catch(_){}
+          if(o.hide&&o.hurl){let ready=hasPv();for(let i=0;i<14&&!ready;i++){await A.sl(1000);dg=A.dlg()||dg;ready=hasPv()}
+          if(!ready){hid='giữ link (Facebook chưa hiện khung xem trước)'}else{
+          await A.sl(1500);const p1=snap();const U=A.norm(o.hurl).slice(0,20),has=()=>A.norm(ed.innerText||ed.textContent||'').includes(U);
+          ed=A.editor(dg)||ed;ed.focus();await A.sl(300);try{const s=window.getSelection();s.selectAllChildren(ed);s.collapseToEnd()}catch(_){}
           for(let i=0;i<String(o.hurl).length;i++)document.execCommand('delete');
           for(let i=0;i<4&&A.norm(ed.innerText||'').length>0&&/\n\s*$/.test(ed.innerText||'');i++)document.execCommand('delete');
-          await A.sl(1800);dg=A.dlg()||dg;ed=A.editor(dg)||ed;
-          if(!hasPv()){await A.fill(ed,o.text);await A.sl(3500);hid='giữ link (khung xem trước mất khi xóa link)'}else if(has()){hid='không xóa được link'}else{hid='đã ẩn link, giữ khung xem trước'}}}
+          await A.sl(1500);
+          if(has()){ed=A.editor(dg)||ed;ed.focus();await A.sl(300);document.execCommand('selectAll');document.execCommand('delete');if(o.pk)await A.fill(ed,o.pk);await A.sl(1500)}
+          dg=A.dlg()||dg;ed=A.editor(dg)||ed;const p2=snap();const lost=!p2.pv&&(p2.i<p1.i||p2.h<p1.h-120);
+          if(lost){await A.fill(ed,o.text);await A.sl(3500);hid='giữ link (khung xem trước mất khi xóa link)'}else if(has()){hid='không xóa được link'}else{hid='đã ẩn link, giữ khung xem trước'}}}
           const sub=await A.submit(dg,24000);if(!sub.ok)return{r:'KHÔNG THẤY NÚT ĐĂNG',d:sub.d};
           await A.sl(1200);const t0=Date.now(),maxw=(o.wait||6)*1000+14000;let closed=false;
           const gone=()=>!document.contains(dg)||!A.vis(dg)||!A.dlg()||!A.editor(dg);
@@ -778,7 +781,7 @@ jobs:
           r=o.r;dbg=o.d||'';link=o.link||''
                if(r=='OK'||r=='CHỜ DUYỆT'||r=='CHƯA XÁC NHẬN'){ok++;if(r!='OK')err=r+(dbg?' • '+dbg:'')}else{bad++;err=r+(dbg?' • '+dbg:'')}}catch(e){bad++;err=e.message;r='LỖI'}}
              q.st=r=='OK'?'THÀNH CÔNG':r=='CHỜ DUYỆT'?'CHỜ DUYỆT':r=='CHƯA XÁC NHẬN'?'CHƯA XÁC NHẬN':r=='SKIPPED_FILTER'?'BỎ QUA':'LỖI';q.note=err;R.queue();L((share?'Chia sẻ':'Đăng')+': '+g.name+' → '+r);
-             H(share?'Chia sẻ':'Đăng bài','',g.name,r,err||'',link,g.url,share?c.url:'');prog(g.name+' → '+r,i+1,gs.length,true);sv();RT('groups');
+             H(share?'Chia sẻ':'Đăng bài','',g.name,r,err||dbg||'',link,g.url,share?c.url:'');prog(g.name+' → '+r,i+1,gs.length,true);sv();RT('groups');
              if(r=='BỊ CHẶN'){L('Facebook chặn tính năng — DỪNG, nghỉ vài giờ');T.stop=true;break}
              if(i<gs.length-1&&!T.stop&&r!='SKIPPED_FILTER'){const s=Math.round(c.d1+Math.random()*Math.max(0,c.d2-c.d1));for(let k=s;k>0&&!T.stop;k--){if(k%3==0){prog('Nghỉ '+k+'s trước nhóm kế tiếp',null,null);await Br().setBarTitle({title:'Nghỉ '+k+'s'})}await W(1000)}}}
             lastRes=name+' • thành công '+ok+' • lỗi '+bad+(T.stop?' • đã dừng':'')},{total:gs.length})}
