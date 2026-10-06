@@ -1,1 +1,60 @@
+name: Build Autu IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Tao project
+        run: |
+          mkdir -p www
+          cat > package.json <<'EOF'
+          {"name":"autu-ios","version":"1.0.0","private":true,
+           "dependencies":{"@capacitor/core":"^6.0.0","@capacitor/ios":"^6.0.0"},
+           "devDependencies":{"@capacitor/cli":"^6.0.0"}}
+          EOF
+          cat > capacitor.config.json <<'EOF'
+          {"appId":"com.autu.facebookpro","appName":"Autu Pro","webDir":"www","backgroundColor":"#0B1220",
+           "server":{"cleartext":true,"allowNavigation":["*"]}}
+          EOF
+          cat > www/index.html <<'EOF'
+          <!doctype html><html lang="vi"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Autu Pro</title>
+          <style>body{margin:0;background:#0B1220;color:#E6EDF7;font:16px -apple-system,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+          .b{width:100%;max-width:420px;text-align:center}p{color:#8A9BB4}
+          input{width:100%;box-sizing:border-box;font-size:18px;padding:14px;border-radius:14px;border:1px solid #223049;background:#131C2E;color:#E6EDF7;text-align:center}
+          button{width:100%;margin-top:12px;padding:14px;border:0;border-radius:14px;background:#0068FF;color:#fff;font-size:17px;font-weight:600}</style></head>
+          <body><div class="b"><h1>Autu Pro</h1><p>Nhap dia chi may tinh (Autu > He thong > Dien thoai)</p>
+          <input id="u" inputmode="url" autocapitalize="off" placeholder="http://192.168.1.10:8765"><button onclick="go()">Ket noi</button></div>
+          <script>const k='autu_url',s=localStorage.getItem(k);if(s){location.replace(s)}document.getElementById('u').value=s||'';
+          function go(){let v=document.getElementById('u').value.trim();if(!v)return;if(!/^https?:\/\//.test(v))v='http://'+v;localStorage.setItem(k,v);location.replace(v)}</script></body></html>
+          EOF
+      - run: npm install
+      - run: npx cap add ios
+      - name: Cho phep HTTP mang noi bo
+        run: |
+          P=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity dict" $P
+          /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" $P
+          /usr/libexec/PlistBuddy -c "Add :NSLocalNetworkUsageDescription string Ket noi toi Autu tren may tinh" $P
+      - run: npx cap sync ios
+      - name: Build khong ky
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath $PWD/build/App.xcarchive archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+      - name: Dong goi ipa
+        run: |
+          mkdir -p Payload
+          cp -R ios/App/build/App.xcarchive/Products/Applications/App.app Payload/
+          zip -qr Autu.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with: { name: Autu-ipa, path: Autu.ipa }
 
