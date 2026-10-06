@@ -13,35 +13,119 @@ jobs:
       - name: Tao project
         run: |
           mkdir -p www
-          cat > package.json <<'EOF'
-          {"name":"autu-ios","version":"1.0.0","private":true,
-           "dependencies":{"@capacitor/core":"^6.0.0","@capacitor/ios":"^6.0.0"},
-           "devDependencies":{"@capacitor/cli":"^6.0.0"}}
-          EOF
-          cat > capacitor.config.json <<'EOF'
-          {"appId":"com.autu.facebookpro","appName":"Autu Pro","webDir":"www","backgroundColor":"#0B1220",
-           "server":{"cleartext":true,"allowNavigation":["*"]}}
-          EOF
-          cat > www/index.html <<'EOF'
+          cat > package.json <<'AUTU_EOF'
+          {"name": "autu-ios", "version": "2.0.0", "private": true, "dependencies": {"@capacitor/core": "^6.0.0", "@capacitor/ios": "^6.0.0", "cordova-plugin-inappbrowser": "^6.0.0"}, "devDependencies": {"@capacitor/cli": "^6.0.0"}}
+          AUTU_EOF
+          cat > capacitor.config.json <<'AUTU_EOF'
+          {"appId": "com.autu.facebookpro", "appName": "Autu Pro", "webDir": "www", "backgroundColor": "#0B1220", "server": {"cleartext": true, "allowNavigation": ["*"]}}
+          AUTU_EOF
+          cat > www/index.html <<'AUTU_EOF'
           <!doctype html><html lang="vi"><head><meta charset="utf-8">
-          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Autu Pro</title>
-          <style>body{margin:0;background:#0B1220;color:#E6EDF7;font:16px -apple-system,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
-          .b{width:100%;max-width:420px;text-align:center}p{color:#8A9BB4}
-          input{width:100%;box-sizing:border-box;font-size:18px;padding:14px;border-radius:14px;border:1px solid #223049;background:#131C2E;color:#E6EDF7;text-align:center}
-          button{width:100%;margin-top:12px;padding:14px;border:0;border-radius:14px;background:#0068FF;color:#fff;font-size:17px;font-weight:600}</style></head>
-          <body><div class="b"><h1>Autu Pro</h1><p>Nhap dia chi may tinh (Autu > He thong > Dien thoai)</p>
-          <input id="u" inputmode="url" autocapitalize="off" placeholder="http://192.168.1.10:8765"><button onclick="go()">Ket noi</button></div>
-          <script>const k='autu_url',s=localStorage.getItem(k);if(s){location.replace(s)}document.getElementById('u').value=s||'';
-          function go(){let v=document.getElementById('u').value.trim();if(!v)return;if(!/^https?:\/\//.test(v))v='http://'+v;localStorage.setItem(k,v);location.replace(v)}</script></body></html>
-          EOF
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Autu</title>
+          <style>
+          :root{--bg:#0B1220;--c:#131C2E;--b:#223049;--t:#E6EDF7;--m:#8A9BB4;--a:#0068FF}
+          *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:15px -apple-system,sans-serif;padding:env(safe-area-inset-top) 0 0;display:flex;flex-direction:column;height:100vh}
+          h1{font-size:18px;margin:0;padding:10px 14px}main{flex:1;overflow:auto;padding:0 12px 12px}
+          .card{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:12px;margin-bottom:10px}
+          input,textarea{width:100%;background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:10px;padding:10px;font:15px sans-serif;margin:4px 0}
+          textarea{min-height:120px}button{border:0;border-radius:10px;padding:11px;background:var(--a);color:#fff;font-weight:600;font-size:15px;width:100%;margin-top:6px}
+          button.g{background:var(--b)}button.r{background:#DC2626}.row{display:flex;gap:8px}.row>*{flex:1}
+          .it{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--b)}.it input{width:auto;margin:0}.it div{flex:1;min-width:0}
+          .it b,.it small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}small{color:var(--m)}
+          .tg{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--b)}.ok{background:#14532D}.wt{background:#78350F}.er{background:#7F1D1D}
+          nav{display:flex;background:var(--c);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom)}
+          nav button{background:none;color:var(--m);border-radius:0;margin:0;font-size:12px}nav button.on{color:var(--a)}
+          pre{white-space:pre-wrap;font:11px/1.5 monospace;color:var(--m);margin:0}.h{display:none}#st{padding:0 14px;color:var(--m);font-size:12px}
+          </style></head><body>
+          <h1>Autu • Nhóm Facebook</h1><div id="st">Sẵn sàng</div>
+          <main>
+          <section id="p0"><div class="card"><input id="kw" placeholder="Từ khóa nhóm (vd: búa phá đá)"><button onclick="A.find()">🔎 Tìm nhóm</button>
+          <small>Facebook mở trong cửa sổ riêng: đăng nhập 1 lần, app tự thao tác. Nút "Dừng" ở góc cửa sổ Facebook.</small></div>
+          <div class="card"><div class="row"><button class="g" onclick="A.sel(1)">Chọn hết</button><button class="g" onclick="A.sel(0)">Bỏ chọn</button><button class="g" onclick="A.del()">Xóa chọn</button></div>
+          <button onclick="A.join()">➕ Tham gia nhóm đã chọn</button><div id="gl"></div></div></section>
+          <section id="p1" class="h"><div class="card"><small>Hỗ trợ xoay vòng: {Chào|Xin chào} anh/chị — mỗi nhóm một biến thể, tránh trùng nội dung.</small>
+          <textarea id="tx" placeholder="Nội dung bài đăng"></textarea><button onclick="A.post()">📝 Đăng vào nhóm đã vào + đã chọn</button></div></section>
+          <section id="p2" class="h"><div class="card"><input id="su" placeholder="Link bài cần chia sẻ (https://facebook.com/...)"><button onclick="A.share()">↪ Chia sẻ vào nhóm đã vào + đã chọn</button></div></section>
+          <section id="p3" class="h"><div class="card"><div class="row"><div>Giới hạn/ngày — vào nhóm<input id="lj" type="number"></div><div>Đăng<input id="lp" type="number"></div><div>Chia sẻ<input id="ls" type="number"></div></div>
+          <div class="row"><div>Nghỉ tối thiểu (giây)<input id="d1" type="number"></div><div>Nghỉ tối đa<input id="d2" type="number"></div></div>
+          <button class="g" onclick="A.save()">Lưu cài đặt</button><small id="cnt"></small></div>
+          <div class="card"><pre id="lg"></pre></div></section>
+          </main>
+          <nav><button class="on" onclick="T(0)">Nhóm</button><button onclick="T(1)">Đăng bài</button><button onclick="T(2)">Chia sẻ</button><button onclick="T(3)">Cài đặt</button></nav>
+          <script>
+          const $=s=>document.querySelector(s),W=ms=>new Promise(r=>setTimeout(r,ms)),K='autu_v1';
+          let S=Object.assign({groups:[],text:'',lim:{j:10,p:15,s:10},dl:[60,150],cnt:{},log:[]},JSON.parse(localStorage.getItem(K)||'{}'));
+          let ref=null,stop=false,busy=false,loaded=false;
+          const sv=()=>localStorage.setItem(K,JSON.stringify(S));
+          const day=()=>new Date().toISOString().slice(0,10);
+          function cnt(k){if(S.cnt.d!==day())S.cnt={d:day(),j:0,p:0,s:0};return S.cnt[k]}
+          function L(m){S.log.push(new Date().toLocaleTimeString('vi')+' '+m);S.log=S.log.slice(-150);sv();$('#lg').textContent=S.log.slice(-60).join('\n');$('#st').textContent=m}
+          function T(i){document.querySelectorAll('nav button').forEach((b,j)=>b.classList.toggle('on',i==j));for(let j=0;j<4;j++)$('#p'+j).classList.toggle('h',i!=j);if(i==3)R()}
+          function R(){const g=$('#gl');g.innerHTML=S.groups.map((x,i)=>`<label class="it"><input type="checkbox" ${x.c?'checked':''} onchange="S.groups[${i}].c=this.checked;sv()"><div><b>${x.name}</b><small>${x.url}</small></div><span class="tg ${x.s=='ĐÃ VÀO'?'ok':x.s=='CHỜ DUYỆT'?'wt':x.s&&x.s!='MỚI'?'er':''}">${x.s||'MỚI'}</span></label>`).join('')||'<small>Chưa có nhóm. Hãy tìm nhóm.</small>';
+          $('#tx').value=S.text;$('#lj').value=S.lim.j;$('#lp').value=S.lim.p;$('#ls').value=S.lim.s;$('#d1').value=S.dl[0];$('#d2').value=S.dl[1];$('#cnt').textContent=`Hôm nay: vào ${cnt('j')} • đăng ${cnt('p')} • chia sẻ ${cnt('s')}`;$('#lg').textContent=S.log.slice(-60).join('\n')}
+          /* ---- mã chạy TRONG trang Facebook ---- */
+          const HELP=`(()=>{if(window.__A)return;const A=window.__A={sl:ms=>new Promise(r=>setTimeout(r,ms)),
+          vis:e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length),
+          find(rx,sel){for(const e of document.querySelectorAll(sel||'[role=button],button,a,[role=menuitem],[role=option],[role=tab]')){const t=((e.getAttribute('aria-label')||e.innerText||'')+'').trim();if(t&&t.length<70&&rx.test(t)&&A.vis(e))return e}return null},
+          async click(rx,ms,sel){const end=Date.now()+(ms||6000);while(Date.now()<end){const e=A.find(rx,sel);if(e){e.scrollIntoView({block:'center'});await A.sl(300);e.click();return true}await A.sl(400)}return false},
+          async type(el,t){el.focus();await A.sl(300);document.execCommand('selectAll');document.execCommand('insertText',false,t);el.dispatchEvent(new Event('input',{bubbles:true}))},
+          blocked(){return /(tạm thời bị chặn|temporarily blocked|bị hạn chế|you can.t use this feature|đã bị chặn)/i.test(document.body.innerText.slice(0,4000))},
+          ov(t){let d=document.getElementById('__ov');if(!d){d=document.createElement('div');d.id='__ov';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#0068FF;color:#fff;font:12px sans-serif;padding:4px 8px;text-align:center';document.body.appendChild(d)}d.textContent=t}}})();1`;
+          const TASKS={
+          find:`const out={};for(let i=0;i<7;i++){document.querySelectorAll('a[href*="/groups/"]').forEach(a=>{const m=a.href.match(/\\/groups\\/([\\w.\\-]+)\\/?(\\?|$)/);if(!m||/^(feed|discover|search|joins|create)$/.test(m[1]))return;const n=(a.innerText||'').split('\\n').map(s=>s.trim()).filter(s=>s.length>2)[0];if(n&&!out[m[1]])out[m[1]]={name:n,url:'https://www.facebook.com/groups/'+m[1]}});window.scrollBy(0,2500);await A.sl(1300)}return Object.values(out)`,
+          join:`if(A.blocked())return'BỊ CHẶN';if(A.find(/^(Đã tham gia|Joined)$/))return'ĐÃ VÀO';if(A.find(/(Hủy yêu cầu|Cancel request|Đã gửi yêu cầu|Requested)/))return'CHỜ DUYỆT';
+          if(!await A.click(/^(Tham gia nhóm|Join group|Tham gia|Join)$/,7000))return'KHÔNG THẤY NÚT';await A.sl(2500);if(A.blocked())return'BỊ CHẶN';
+          const d=document.querySelector('[role=dialog]');if(d&&d.querySelector('textarea,input,[role=radio],[role=checkbox]')){await A.click(/^(Đóng|Close)$/,1500);return'CẦN TRẢ LỜI CÂU HỎI'}
+          return A.find(/(Hủy yêu cầu|Cancel request|Đã gửi yêu cầu|Requested)/)?'CHỜ DUYỆT':A.find(/^(Đã tham gia|Joined)$/)?'ĐÃ VÀO':'CHỜ DUYỆT'`,
+          post:`if(A.blocked())return'BỊ CHẶN';if(A.find(/(Tham gia nhóm|Join group)$/))return'CHƯA VÀO NHÓM';
+          if(!await A.click(/^(Bạn viết gì đi|Viết gì đó|Bạn đang nghĩ gì|Write something|What.s on your mind|Tạo bài viết|Create a post)/,9000,'[role=button],div,span'))return'KHÔNG THẤY Ô SOẠN';await A.sl(2000);
+          let tb=null;for(let i=0;i<12&&!tb;i++){tb=[...document.querySelectorAll('[contenteditable=true][role=textbox],[contenteditable=true]')].find(A.vis);await A.sl(500)}
+          if(!tb)return'KHÔNG THẤY KHUNG GÕ';await A.type(tb,__TEXT__);await A.sl(1500);if(!await A.click(/^(Đăng|Post)$/,6000))return'KHÔNG THẤY NÚT ĐĂNG';await A.sl(5000);
+          return A.blocked()?'BỊ CHẶN':'OK'`,
+          share:`if(A.blocked())return'BỊ CHẶN';if(!await A.click(/^(Chia sẻ|Share)$/,9000))return'KHÔNG THẤY NÚT CHIA SẺ';await A.sl(1800);
+          if(!await A.click(/(Nhóm|Group)/,5000,'[role=button],[role=menuitem],[role=option],div[tabindex],span'))return'KHÔNG THẤY MỤC NHÓM';await A.sl(2000);
+          const q=[...document.querySelectorAll('input[type=search],input[type=text],input:not([type])')].find(A.vis);if(!q)return'KHÔNG THẤY Ô TÌM NHÓM';q.focus();document.execCommand('insertText',false,__NAME__);await A.sl(2500);
+          const nm=__NAME__.toLowerCase();const it=[...document.querySelectorAll('[role=button],[role=option],[role=radio],[role=listitem],div[tabindex]')].find(e=>A.vis(e)&&(e.innerText||'').toLowerCase().includes(nm.slice(0,18)));
+          if(!it)return'KHÔNG THẤY NHÓM';it.click();await A.sl(1500);if(!await A.click(/^(Đăng|Post|Chia sẻ ngay|Share now)$/,6000))return'KHÔNG THẤY NÚT ĐĂNG';await A.sl(4500);return A.blocked()?'BỊ CHẶN':'OK'`};
+          /* ---- điều khiển cửa sổ Facebook ---- */
+          function open(){return new Promise((ok,no)=>{if(!(window.cordova&&cordova.InAppBrowser))return no('Thiếu plugin trình duyệt');
+           ref=cordova.InAppBrowser.open('https://www.facebook.com/','_blank','location=no,toolbar=yes,closebuttoncaption=Dừng,hidenavigationbuttons=yes,toolbarposition=top');
+           ref.addEventListener('loadstart',()=>loaded=false);ref.addEventListener('loadstop',()=>loaded=true);ref.addEventListener('exit',()=>{stop=true;ref=null});setTimeout(ok,4500)})}
+          const X=c=>new Promise(r=>ref?ref.executeScript({code:c},v=>r(v&&v[0])):r(null));
+          async function nav(u){loaded=false;await X(`location.href=${JSON.stringify(u)};1`);for(let i=0;i<40&&!loaded;i++)await W(500);await W(2500);await X(HELP)}
+          async function run(body,ms=70000){await X(`window.__r=undefined;(async()=>{try{window.__r=await(async()=>{${body}})()}catch(e){window.__r='LỖI '+e}})();1`);
+           const end=Date.now()+ms;while(Date.now()<end&&!stop){await W(900);const v=await X('JSON.stringify(window.__r===undefined?null:window.__r)');if(v&&v!=='null')return JSON.parse(v)}return stop?'ĐÃ DỪNG':'HẾT GIỜ'}
+          async function pause(){const s=Math.round(S.dl[0]+Math.random()*(S.dl[1]-S.dl[0]));for(let i=s;i>0&&!stop;i--){if(i%5==0){L('Nghỉ '+i+'s');X(`window.__A&&__A.ov('Nghỉ ${i}s — Dừng = đóng cửa sổ này')`)}await W(1000)}}
+          async function job(name,list,key,fn){if(busy)return alert('Đang chạy tác vụ khác');if(!list.length)return alert('Chưa chọn nhóm phù hợp');
+           const cap=S.lim[key];if(cnt(key=='j'?'j':key=='p'?'p':'s')>=cap)return alert('Hôm nay đã đủ giới hạn '+cap);
+           if(!confirm(`${name}: ${list.length} nhóm (nghỉ ${S.dl[0]}-${S.dl[1]}s/nhóm). Facebook mở ra — nếu cần hãy đăng nhập trước, rồi để màn hình sáng.`))return;
+           busy=true;stop=false;try{await open();try{await W(1500);await window.navigator.wakeLock?.request('screen')}catch(e){}
+            for(const g of list){if(stop)break;const ck=key;if(cnt(ck)>=cap){L('Đủ giới hạn ngày');break}
+             L(name+': '+g.name);await X(`window.__A&&__A.ov(${JSON.stringify(name+': '+g.name)})`);const r=await fn(g);L(' → '+r);
+             if(r=='BỊ CHẶN'){L('Facebook chặn tính năng — DỪNG, nghỉ vài giờ');stop=true;break}
+             if(['OK','ĐÃ VÀO','CHỜ DUYỆT'].includes(r)||r=='CẦN TRẢ LỜI CÂU HỎI'){if(r!='ĐÃ VÀO')S.cnt[ck]=cnt(ck)+1}sv();R();if(list.indexOf(g)<list.length-1)await pause()}
+           }catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;L('Hoàn tất');R()}}
+          const pick=f=>S.groups.filter(g=>g.c&&f(g));
+          const A={
+           sel(v){S.groups.forEach(g=>g.c=!!v);sv();R()},del(){S.groups=S.groups.filter(g=>!g.c);sv();R()},
+           save(){S.text=$('#tx').value;S.lim={j:+$('#lj').value||10,p:+$('#lp').value||15,s:+$('#ls').value||10};S.dl=[+$('#d1').value||60,Math.max(+$('#d2').value||150,+$('#d1').value||60)];sv();alert('Đã lưu')},
+           async find(){const k=$('#kw').value.trim();if(!k||busy)return;busy=true;stop=false;try{await open();L('Tìm nhóm: '+k);await nav('https://www.facebook.com/search/groups/?q='+encodeURIComponent(k));
+            const r=await run(TASKS.find,60000);let n=0;if(Array.isArray(r))for(const g of r)if(!S.groups.some(x=>x.url==g.url)){S.groups.push({...g,s:'MỚI'});n++}L('Tìm thấy '+(Array.isArray(r)?r.length:0)+' • thêm mới '+n)}catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;sv();R()}},
+           join(){job('Tham gia',pick(g=>g.s!='ĐÃ VÀO'&&g.s!='CHỜ DUYỆT'),'j',async g=>{await nav(g.url);const r=await run(TASKS.join);g.s=r;return r})},
+           post(){A.save();if(!S.text.trim())return alert('Nhập nội dung bài');job('Đăng bài',pick(g=>g.s=='ĐÃ VÀO'),'p',async g=>{await nav(g.url);
+            const t=S.text.replace(/\{([^{}]+)\}/g,(m,a)=>{const o=a.split('|');return o[Math.floor(Math.random()*o.length)]});const r=await run(TASKS.post.replace('__TEXT__',JSON.stringify(t)),90000);g.last=r;return r})},
+           share(){const u=$('#su').value.trim();if(!/facebook\.com|fb\.watch|fb\.com/.test(u))return alert('Nhập link bài Facebook');job('Chia sẻ',pick(g=>g.s=='ĐÃ VÀO'),'s',async g=>{await nav(u);
+            return await run(TASKS.share.split('__NAME__').join(JSON.stringify(g.name)),90000)})}};
+          R();
+          </script></body></html>
+          AUTU_EOF
       - run: npm install
       - run: npx cap add ios
-      - name: Cho phep HTTP mang noi bo
+      - name: Cho phep HTTP
         run: |
           P=ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity dict" $P
           /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" $P
-          /usr/libexec/PlistBuddy -c "Add :NSLocalNetworkUsageDescription string Ket noi toi Autu tren may tinh" $P
       - run: npx cap sync ios
       - name: Build khong ky
         run: |
@@ -57,4 +141,3 @@ jobs:
           zip -qr Autu.ipa Payload
       - uses: actions/upload-artifact@v4
         with: { name: Autu-ipa, path: Autu.ipa }
-
