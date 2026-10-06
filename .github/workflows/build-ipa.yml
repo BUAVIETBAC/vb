@@ -11,166 +11,785 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Tao project
+      - name: Tao project (app + plugin trinh duyet Swift)
         run: |
-          mkdir -p www
+          mkdir -p www plugin/ios/Sources/AutuBrowserPlugin
           cat > package.json <<'AUTU_EOF'
-          {"name": "autu-ios", "version": "2.2.0", "private": true, "dependencies": {"@capacitor/core": "^6.0.0", "@capacitor/ios": "^6.0.0", "cordova-plugin-inappbrowser": "^6.0.0"}, "devDependencies": {"@capacitor/cli": "^6.0.0"}}
+          {"name": "autu-ios", "version": "3.0.0", "private": true, "dependencies": {"@capacitor/core": "^6.0.0", "@capacitor/ios": "^6.0.0", "autu-browser": "file:plugin"}, "devDependencies": {"@capacitor/cli": "^6.0.0"}}
           AUTU_EOF
           cat > capacitor.config.json <<'AUTU_EOF'
-          {"appId": "com.autu.facebookpro", "appName": "Autu Pro", "webDir": "www", "backgroundColor": "#0B1220", "server": {"cleartext": true, "allowNavigation": ["*"]}}
+          {"appId": "com.autu.facebookpro", "appName": "Autu Pro", "webDir": "www", "backgroundColor": "#EEF3FA", "ios": {"contentInset": "never", "scrollEnabled": false}}
           AUTU_EOF
+          mkdir -p $(dirname plugin/package.json)
+          cat > plugin/package.json <<'AUTU_EOF'
+          {
+            "name": "autu-browser",
+            "version": "1.0.0",
+            "description": "Autu embedded Facebook browser",
+            "main": "index.js",
+            "files": ["ios/", "AutuBrowser.podspec", "index.js"],
+            "capacitor": { "ios": { "src": "ios" } },
+            "peerDependencies": { "@capacitor/core": ">=6.0.0" }
+          }
+          AUTU_EOF
+          mkdir -p $(dirname plugin/index.js)
+          cat > plugin/index.js <<'AUTU_EOF'
+          module.exports = {};
+          AUTU_EOF
+          mkdir -p $(dirname plugin/AutuBrowser.podspec)
+          cat > plugin/AutuBrowser.podspec <<'AUTU_EOF'
+          require 'json'
+          package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
+          Pod::Spec.new do |s|
+            s.name = 'AutuBrowser'
+            s.version = package['version']
+            s.summary = package['description']
+            s.license = 'MIT'
+            s.homepage = 'https://autu.local'
+            s.author = 'Autu'
+            s.source = { :git => 'https://autu.local/autu-browser.git', :tag => s.version.to_s }
+            s.source_files = 'ios/Sources/**/*.{swift,h,m,c,cc,mm,cpp}'
+            s.ios.deployment_target = '14.0'
+            s.dependency 'Capacitor'
+            s.swift_version = '5.1'
+          end
+          AUTU_EOF
+          mkdir -p $(dirname plugin/ios/Sources/AutuBrowserPlugin/AutuBrowserPlugin.swift)
+          cat > plugin/ios/Sources/AutuBrowserPlugin/AutuBrowserPlugin.swift <<'AUTU_EOF'
+          import Foundation
+          import Capacitor
+          import WebKit
+          import AVFoundation
+          import UIKit
+
+          @objc(AutuBrowserPlugin)
+          public class AutuBrowserPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDelegate, WKUIDelegate {
+              public let identifier = "AutuBrowserPlugin"
+              public let jsName = "AutuBrowser"
+              public let pluginMethods: [CAPPluginMethod] = [
+                  CAPPluginMethod(name: "openWeb", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "closeWeb", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "gotoUrl", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "exec", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "state", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "setVisible", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "setBarTitle", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "session", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "clearSession", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "keepAlive", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "save", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "load", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "openExternal", returnType: CAPPluginReturnPromise)
+              ]
+
+              static let desktopUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15"
+              static let mobileUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+              static let viewportJS = "(function(){function f(){var h=document.head||document.documentElement;if(!h)return;var m=document.querySelector('meta[name=viewport]');if(!m){m=document.createElement('meta');m.name='viewport';h.appendChild(m)}if(m.content!=='width=1280')m.content='width=1280'}f();var mo=new MutationObserver(f);mo.observe(document,{childList:true,subtree:true});window.addEventListener('load',function(){setTimeout(function(){mo.disconnect()},1500)})})();"
+
+              private var box: UIView?
+              private var web: WKWebView?
+              private var bar: UIView?
+              private var titleLabel: UILabel?
+              private var loading = false
+              private var lastError = ""
+              private var shown = false
+              private var mode = "desktop"
+              private var player: AVAudioPlayer?
+              private var bgTask: UIBackgroundTaskIdentifier = .invalid
+              private var observersAdded = false
+
+              // MARK: - helpers
+              private func keyWindow() -> UIWindow? {
+                  for scene in UIApplication.shared.connectedScenes {
+                      if let ws = scene as? UIWindowScene {
+                          if let w = ws.windows.first(where: { $0.isKeyWindow }) { return w }
+                          if let w = ws.windows.first { return w }
+                      }
+                  }
+                  return nil
+              }
+
+              private func supportDir() -> URL {
+                  let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                  let dir = base.appendingPathComponent("autu", isDirectory: true)
+                  try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                  return dir
+              }
+
+              private func applyMode(_ m: String) {
+                  mode = m
+                  guard let web = web else { return }
+                  web.customUserAgent = (m == "desktop") ? AutuBrowserPlugin.desktopUA : AutuBrowserPlugin.mobileUA
+                  let ucc = web.configuration.userContentController
+                  ucc.removeAllUserScripts()
+                  if m == "desktop" {
+                      ucc.addUserScript(WKUserScript(source: AutuBrowserPlugin.viewportJS, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+                  }
+              }
+
+              private func ensureWeb(_ m: String) {
+                  if web == nil {
+                      let cfg = WKWebViewConfiguration()
+                      cfg.websiteDataStore = WKWebsiteDataStore.default()
+                      cfg.allowsInlineMediaPlayback = true
+                      cfg.mediaTypesRequiringUserActionForPlayback = []
+                      cfg.preferences.javaScriptCanOpenWindowsAutomatically = true
+                      let w = WKWebView(frame: .zero, configuration: cfg)
+                      w.navigationDelegate = self
+                      w.uiDelegate = self
+                      w.allowsBackForwardNavigationGestures = true
+                      w.translatesAutoresizingMaskIntoConstraints = false
+                      web = w
+
+                      let container = UIView()
+                      container.backgroundColor = UIColor(red: 0.04, green: 0.08, blue: 0.14, alpha: 1)
+                      container.translatesAutoresizingMaskIntoConstraints = false
+
+                      let b = UIView()
+                      b.backgroundColor = UIColor(red: 0.04, green: 0.42, blue: 1.0, alpha: 1)
+                      b.translatesAutoresizingMaskIntoConstraints = false
+                      let t = UILabel()
+                      t.textColor = .white
+                      t.font = UIFont.boldSystemFont(ofSize: 14)
+                      t.text = "Autu • Facebook"
+                      t.translatesAutoresizingMaskIntoConstraints = false
+                      let hide = UIButton(type: .system)
+                      hide.setTitle("Thu nhỏ", for: .normal)
+                      hide.setTitleColor(.white, for: .normal)
+                      hide.translatesAutoresizingMaskIntoConstraints = false
+                      hide.addTarget(self, action: #selector(hideTapped), for: .touchUpInside)
+                      let stop = UIButton(type: .system)
+                      stop.setTitle("Dừng", for: .normal)
+                      stop.setTitleColor(UIColor(red: 1, green: 0.8, blue: 0.8, alpha: 1), for: .normal)
+                      stop.translatesAutoresizingMaskIntoConstraints = false
+                      stop.addTarget(self, action: #selector(stopTapped), for: .touchUpInside)
+                      b.addSubview(t); b.addSubview(hide); b.addSubview(stop)
+                      container.addSubview(b); container.addSubview(w)
+                      NSLayoutConstraint.activate([
+                          b.topAnchor.constraint(equalTo: container.topAnchor),
+                          b.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                          b.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                          b.bottomAnchor.constraint(equalTo: container.safeAreaLayoutGuide.topAnchor, constant: 44),
+                          t.leadingAnchor.constraint(equalTo: b.leadingAnchor, constant: 14),
+                          t.bottomAnchor.constraint(equalTo: b.bottomAnchor, constant: -12),
+                          stop.trailingAnchor.constraint(equalTo: b.trailingAnchor, constant: -12),
+                          stop.bottomAnchor.constraint(equalTo: b.bottomAnchor, constant: -6),
+                          hide.trailingAnchor.constraint(equalTo: stop.leadingAnchor, constant: -12),
+                          hide.bottomAnchor.constraint(equalTo: b.bottomAnchor, constant: -6),
+                          w.topAnchor.constraint(equalTo: b.bottomAnchor),
+                          w.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                          w.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                          w.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+                      ])
+                      box = container; bar = b; titleLabel = t
+
+                      if let win = keyWindow() {
+                          win.insertSubview(container, at: 0)
+                          NSLayoutConstraint.activate([
+                              container.topAnchor.constraint(equalTo: win.topAnchor),
+                              container.bottomAnchor.constraint(equalTo: win.bottomAnchor),
+                              container.leadingAnchor.constraint(equalTo: win.leadingAnchor),
+                              container.trailingAnchor.constraint(equalTo: win.trailingAnchor)
+                          ])
+                          win.layoutIfNeeded()
+                      }
+                      shown = false
+                  }
+                  applyMode(m)
+              }
+
+              @objc private func hideTapped() { setShown(false) }
+              @objc private func stopTapped() { notifyListeners("stopRequested", data: [:]); setShown(false) }
+
+              private func setShown(_ v: Bool) {
+                  shown = v
+                  guard let box = box, let win = box.superview else { return }
+                  if v { win.bringSubviewToFront(box) } else { win.sendSubviewToBack(box) }
+              }
+
+              // MARK: - WK delegates
+              public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) { loading = true; lastError = "" }
+              public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { loading = false }
+              public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { loading = false; lastError = error.localizedDescription }
+              public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { loading = false; lastError = error.localizedDescription }
+              public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { loading = false; lastError = "PROCESS_TERMINATED"; webView.reload() }
+              public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+                  if navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == false { webView.load(navigationAction.request) }
+                  return nil
+              }
+              public func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) { completionHandler() }
+              public func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) { completionHandler(true) }
+
+              // MARK: - plugin methods
+              @objc func openWeb(_ call: CAPPluginCall) {
+                  let urlStr = call.getString("url") ?? "about:blank"
+                  let m = call.getString("mode") ?? "desktop"
+                  let show = call.getBool("show") ?? false
+                  DispatchQueue.main.async {
+                      self.ensureWeb(m)
+                      self.setShown(show)
+                      if let u = URL(string: urlStr) { self.loading = true; self.web?.load(URLRequest(url: u)) }
+                      call.resolve()
+                  }
+              }
+
+              @objc func closeWeb(_ call: CAPPluginCall) {
+                  DispatchQueue.main.async {
+                      self.web?.stopLoading()
+                      self.box?.removeFromSuperview()
+                      self.web = nil; self.box = nil; self.bar = nil; self.titleLabel = nil
+                      self.shown = false; self.loading = false
+                      call.resolve()
+                  }
+              }
+
+              @objc func gotoUrl(_ call: CAPPluginCall) {
+                  let urlStr = call.getString("url") ?? ""
+                  let m = call.getString("mode")
+                  DispatchQueue.main.async {
+                      guard self.web != nil else { call.reject("NO_WEB"); return }
+                      if let m = m, m != self.mode { self.applyMode(m) }
+                      guard let u = URL(string: urlStr) else { call.reject("BAD_URL"); return }
+                      self.loading = true; self.lastError = ""
+                      self.web?.load(URLRequest(url: u))
+                      call.resolve()
+                  }
+              }
+
+              @objc func exec(_ call: CAPPluginCall) {
+                  let code = call.getString("code") ?? "return null;"
+                  let timeout = call.getDouble("timeout") ?? 120
+                  DispatchQueue.main.async {
+                      guard let web = self.web else { call.resolve(["error": "NO_WEB"]); return }
+                      var done = false
+                      let finish: (String?, String?) -> Void = { v, e in
+                          if done { return }
+                          done = true
+                          if let e = e { call.resolve(["error": e]) } else { call.resolve(["value": v ?? ""]) }
+                      }
+                      let wrapped = "const __r = await (async()=>{" + code + "\n})(); return (__r===undefined||__r===null)?'':JSON.stringify(__r);"
+                      web.callAsyncJavaScript(wrapped, arguments: [:], in: nil, in: .page) { res in
+                          switch res {
+                          case .success(let v): finish((v as? String) ?? "", nil)
+                          case .failure(let err): finish(nil, err.localizedDescription)
+                          }
+                      }
+                      DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { finish(nil, "TIMEOUT") }
+                  }
+              }
+
+              @objc func state(_ call: CAPPluginCall) {
+                  DispatchQueue.main.async {
+                      call.resolve([
+                          "alive": self.web != nil,
+                          "url": self.web?.url?.absoluteString ?? "",
+                          "title": self.web?.title ?? "",
+                          "loading": self.loading || (self.web?.isLoading ?? false),
+                          "visible": self.shown,
+                          "error": self.lastError
+                      ])
+                  }
+              }
+
+              @objc func setVisible(_ call: CAPPluginCall) {
+                  let v = call.getBool("visible") ?? false
+                  DispatchQueue.main.async { self.setShown(v); call.resolve() }
+              }
+
+              @objc func setBarTitle(_ call: CAPPluginCall) {
+                  let t = call.getString("title") ?? ""
+                  DispatchQueue.main.async { self.titleLabel?.text = t; call.resolve() }
+              }
+
+              @objc func session(_ call: CAPPluginCall) {
+                  DispatchQueue.main.async {
+                      WKWebsiteDataStore.default().httpCookieStore.getAllCookies { cookies in
+                          let fb = cookies.filter { $0.domain.contains("facebook.com") }
+                          let cu = fb.first(where: { $0.name == "c_user" })
+                          let xs = fb.first(where: { $0.name == "xs" })
+                          call.resolve(["loggedIn": (cu != nil && xs != nil), "uid": cu?.value ?? "", "count": fb.count])
+                      }
+                  }
+              }
+
+              @objc func clearSession(_ call: CAPPluginCall) {
+                  DispatchQueue.main.async {
+                      let store = WKWebsiteDataStore.default()
+                      store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: Date(timeIntervalSince1970: 0)) {
+                          call.resolve()
+                      }
+                  }
+              }
+
+              // MARK: - keep alive in background (silent audio)
+              private func silentWav() -> URL {
+                  let url = FileManager.default.temporaryDirectory.appendingPathComponent("autu_silence.wav")
+                  if FileManager.default.fileExists(atPath: url.path) { return url }
+                  let sampleRate: UInt32 = 8000
+                  let samples = Int(sampleRate)
+                  var data = Data()
+                  func u32(_ v: UInt32) { var x = v.littleEndian; data.append(Data(bytes: &x, count: 4)) }
+                  func u16(_ v: UInt16) { var x = v.littleEndian; data.append(Data(bytes: &x, count: 2)) }
+                  data.append("RIFF".data(using: .ascii)!); u32(UInt32(36 + samples * 2))
+                  data.append("WAVE".data(using: .ascii)!); data.append("fmt ".data(using: .ascii)!)
+                  u32(16); u16(1); u16(1); u32(sampleRate); u32(sampleRate * 2); u16(2); u16(16)
+                  data.append("data".data(using: .ascii)!); u32(UInt32(samples * 2))
+                  data.append(Data(count: samples * 2))
+                  try? data.write(to: url)
+                  return url
+              }
+
+              @objc func keepAlive(_ call: CAPPluginCall) {
+                  let on = call.getBool("on") ?? false
+                  DispatchQueue.main.async {
+                      let app = UIApplication.shared
+                      if on {
+                          app.isIdleTimerDisabled = true
+                          do {
+                              try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
+                              try AVAudioSession.sharedInstance().setActive(true)
+                              let p = try AVAudioPlayer(contentsOf: self.silentWav())
+                              p.numberOfLoops = -1
+                              p.volume = 0.0
+                              p.prepareToPlay()
+                              p.play()
+                              self.player = p
+                          } catch {
+                              call.resolve(["ok": false, "error": error.localizedDescription]); return
+                          }
+                          if !self.observersAdded {
+                              self.observersAdded = true
+                              NotificationCenter.default.addObserver(self, selector: #selector(self.audioInterrupted(_:)), name: AVAudioSession.interruptionNotification, object: nil)
+                              NotificationCenter.default.addObserver(self, selector: #selector(self.didBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
+                          }
+                          call.resolve(["ok": true])
+                      } else {
+                          app.isIdleTimerDisabled = false
+                          self.player?.stop(); self.player = nil
+                          try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                          if self.bgTask != .invalid { app.endBackgroundTask(self.bgTask); self.bgTask = .invalid }
+                          call.resolve(["ok": true])
+                      }
+                  }
+              }
+
+              @objc private func audioInterrupted(_ n: Notification) {
+                  guard player != nil else { return }
+                  if let info = n.userInfo, let t = info[AVAudioSessionInterruptionTypeKey] as? UInt, t == AVAudioSession.InterruptionType.ended.rawValue {
+                      try? AVAudioSession.sharedInstance().setActive(true)
+                      player?.play()
+                  }
+              }
+
+              @objc private func didBackground() {
+                  guard player != nil else { return }
+                  bgTask = UIApplication.shared.beginBackgroundTask(withName: "autu-job") { [weak self] in
+                      if let s = self, s.bgTask != .invalid { UIApplication.shared.endBackgroundTask(s.bgTask); s.bgTask = .invalid }
+                  }
+                  if player?.isPlaying == false { try? AVAudioSession.sharedInstance().setActive(true); player?.play() }
+              }
+
+              // MARK: - storage
+              @objc func save(_ call: CAPPluginCall) {
+                  let key = (call.getString("key") ?? "data").replacingOccurrences(of: "/", with: "_")
+                  let value = call.getString("value") ?? ""
+                  let url = supportDir().appendingPathComponent(key + ".json")
+                  do { try value.write(to: url, atomically: true, encoding: .utf8); call.resolve(["ok": true]) }
+                  catch { call.resolve(["ok": false, "error": error.localizedDescription]) }
+              }
+
+              @objc func load(_ call: CAPPluginCall) {
+                  let key = (call.getString("key") ?? "data").replacingOccurrences(of: "/", with: "_")
+                  let url = supportDir().appendingPathComponent(key + ".json")
+                  let s = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+                  call.resolve(["value": s])
+              }
+
+              @objc func openExternal(_ call: CAPPluginCall) {
+                  let urlStr = call.getString("url") ?? ""
+                  DispatchQueue.main.async {
+                      if let u = URL(string: urlStr) { UIApplication.shared.open(u, options: [:], completionHandler: nil) }
+                      call.resolve()
+                  }
+              }
+          }
+          AUTU_EOF
+          mkdir -p $(dirname www/index.html)
           cat > www/index.html <<'AUTU_EOF'
           <!doctype html><html lang="vi"><head><meta charset="utf-8">
-          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Autu</title>
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+          <meta name="color-scheme" content="light dark"><title>Autu Pro</title>
           <style>
-          :root{--bg:#0B1220;--c:#131C2E;--b:#223049;--t:#E6EDF7;--m:#8A9BB4;--a:#0068FF}
-          *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:15px -apple-system,sans-serif;padding:env(safe-area-inset-top) 0 0;display:flex;flex-direction:column;height:100vh}
-          h1{font-size:18px;margin:0;padding:10px 14px}main{flex:1;overflow:auto;padding:0 12px 12px}
-          .card{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:12px;margin-bottom:10px}
-          input,textarea{width:100%;background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:10px;padding:10px;font:15px sans-serif;margin:4px 0}
-          textarea{min-height:120px}button{border:0;border-radius:10px;padding:11px;background:var(--a);color:#fff;font-weight:600;font-size:15px;width:100%;margin-top:6px}
-          button.g{background:var(--b)}button.r{background:#DC2626}.row{display:flex;gap:8px}.row>*{flex:1}
-          .it{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--b)}.it input{width:auto;margin:0}.it div{flex:1;min-width:0}
-          .it b,.it small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}small{color:var(--m)}
-          .tg{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--b)}.ok{background:#14532D}.wt{background:#78350F}.er{background:#7F1D1D}
-          nav{display:flex;background:var(--c);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom)}
-          nav button{background:none;color:var(--m);border-radius:0;margin:0;font-size:12px}nav button.on{color:var(--a)}
-          select{background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:10px;padding:10px;margin:4px 0;font-size:14px;width:100%}details summary{font-weight:600}
-          .bar{height:6px;background:var(--b);border-radius:9px;overflow:hidden;margin:8px 0 4px}.bar i{display:block;height:100%;width:0;background:var(--a);transition:width .4s}
-          pre{white-space:pre-wrap;font:11px/1.5 monospace;color:var(--m);margin:0}.h{display:none}#st{padding:0 14px;color:var(--m);font-size:12px}
+          :root{--bg:#EEF3FA;--card:#fff;--ink:#0F1B2D;--mut:#6B7A90;--line:#DDE6F2;--acc:#0A6CFF;--acc2:#0556CC;--ok:#0E9F6E;--okb:#E6F8F0;--warn:#B45309;--warnb:#FEF3C7;--err:#DC2626;--errb:#FEE8E8;--chip:#EAF0F9;--sh:0 1px 2px rgba(15,27,45,.06),0 6px 18px rgba(15,27,45,.06)}
+          :root[data-th=dark]{--bg:#0A1220;--card:#121C30;--ink:#E7EEF9;--mut:#8EA0BA;--line:#223250;--chip:#1B2A45;--okb:#0F2B22;--warnb:#33270B;--errb:#34161A;--sh:0 1px 2px rgba(0,0,0,.4)}
+          *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+          html,body{height:100%;margin:0}
+          body{background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;display:flex;flex-direction:column;overflow:hidden}
+          header{background:linear-gradient(135deg,#0A6CFF,#0556CC);color:#fff;padding:calc(env(safe-area-inset-top) + 8px) 14px 10px;display:flex;align-items:center;gap:10px}
+          .logo{font-weight:800;font-size:22px;letter-spacing:-.5px}.logo small{font-weight:600;font-size:11px;opacity:.85;margin-left:4px}
+          header .sp{flex:1}.acc{background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:99px;padding:7px 12px;font-size:12px;font-weight:600}
+          main{flex:1;overflow:auto;padding:10px 12px 16px;-webkit-overflow-scrolling:touch}
+          .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;box-shadow:var(--sh)}
+          h2{font-size:16px;margin:0 0 2px}h3{font-size:13px;margin:0 0 6px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+          small,.mut{color:var(--mut);font-size:12px}
+          .row{display:flex;gap:8px;align-items:center}.row>*{flex:1;min-width:0}.row>.fx{flex:none}
+          .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+          button{font:inherit;font-weight:600;border:0;border-radius:11px;padding:10px 12px;background:var(--acc);color:#fff}
+          button:active{transform:scale(.98);opacity:.9}button.g{background:var(--chip);color:var(--ink)}button.r{background:var(--err)}button.s{padding:7px 10px;font-size:13px}button:disabled{opacity:.45}
+          input[type=text],input[type=number],input[type=search],textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:10px;margin:3px 0}
+          textarea{min-height:130px;resize:vertical}label.k{display:flex;gap:8px;align-items:center;font-size:14px;padding:4px 0}label.k input{width:20px;height:20px;flex:none}
+          .tc{border-left:4px solid var(--acc)}.tc .t{font-size:11px;font-weight:800;color:var(--acc);letter-spacing:.5px}
+          .bar{height:8px;background:var(--chip);border-radius:9px;overflow:hidden;margin:8px 0 4px}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0A6CFF,#3B9BFF);transition:width .35s}
+          .kpis{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.kp{background:var(--chip);border-radius:10px;padding:6px 10px;font-size:12px}.kp b{font-size:15px;display:block}
+          .gi{display:flex;gap:10px;padding:10px;border-radius:12px;margin:6px 0;background:var(--bg);border:1px solid var(--line)}.gi>input{width:22px;height:22px;flex:none;margin-top:2px}.gb{flex:1;min-width:0}
+          .gi b{display:block;font-size:14.5px;word-break:break-word}.gi.ok{background:var(--okb)}.gi.er{background:var(--errb)}.gi.uv{background:var(--warnb)}
+          .chips{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0 2px}.chip{font-style:normal;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--chip);color:var(--mut)}
+          .chip.ok{background:#CFF3E3;color:#066B47}.chip.wt{background:#FDE7A6;color:#7A4A06}.chip.er{background:#FBD0D0;color:#8E1B1B}.chip.bl{background:#D6E6FF;color:#0B4FB8}
+          :root[data-th=dark] .chip.ok{background:#124A37;color:#7CE9BC}:root[data-th=dark] .chip.wt{background:#4A3A10;color:#F6D77A}:root[data-th=dark] .chip.er{background:#5A1D22;color:#FFB4B4}:root[data-th=dark] .chip.bl{background:#173A73;color:#A9CBFF}
+          .note{display:block;color:var(--mut);font-size:11.5px;word-break:break-word}
+          nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding:4px 2px calc(env(safe-area-inset-bottom) + 2px)}
+          nav button{flex:1;background:none;color:var(--mut);padding:6px 0;font-size:10.5px;border-radius:0;display:flex;flex-direction:column;align-items:center;gap:2px}nav button.on{color:var(--acc)}nav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+          .pg{display:none}.pg.on{display:block}
+          #sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:50}#sheet.on{display:flex}
+          #sheet>div{background:var(--card);width:100%;max-height:88%;overflow:auto;border-radius:20px 20px 0 0;padding:14px 14px calc(env(safe-area-inset-bottom) + 14px)}
+          #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;background:#0F1B2D;color:#fff;padding:9px 14px;border-radius:99px;font-size:13px;z-index:60;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%}#toast.on{opacity:1}
+          pre{white-space:pre-wrap;font:11px/1.5 ui-monospace,monospace;color:var(--mut);margin:0;max-height:240px;overflow:auto}
           </style></head><body>
-          <h1>Autu • Nhóm Facebook <small style="color:#8A9BB4;font-size:11px;font-weight:400">build __BUILD__</small></h1><div style="padding:0 14px 8px"><span class="tg" id="chip">○ FB chưa kiểm tra</span></div>
-          <div class="card" style="margin:0 12px 10px"><div class="row" style="align-items:center"><div style="flex:3;min-width:0"><b id="tt">Sẵn sàng</b><small id="st" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Không có tác vụ đang chạy</small></div><button class="r" style="flex:1;margin:0" onclick="A.stopAll()">■ Dừng</button></div><div class="bar"><i id="tb"></i></div><small id="tm"></small></div>
-          <main>
-          <section id="p0"><div class="card"><b id="sum">0 nhóm</b>
-          <div class="row"><button onclick="A.sync()">⟳ Đồng bộ nhóm của tôi</button><button class="g" onclick="A.find()">🔎 Tìm nhóm</button></div>
-          <input id="kw" placeholder="Từ khóa tìm nhóm mới (vd: búa phá đá)">
-          <input id="q" placeholder="Lọc theo tên nhóm..." oninput="R()">
-          <div class="row"><select id="fl" onchange="R()"><option>Tất cả</option><option>Đã vào</option><option>Chờ duyệt</option><option>Chưa vào</option><option>Lỗi</option></select>
-          <select id="so" onchange="R()"><option>Thành viên ↓</option><option>Tên A-Z</option></select></div></div>
-          <div class="card"><div class="row"><button class="g" onclick="A.sel(1)">Chọn hết</button><button class="g" onclick="A.sel(0)">Bỏ chọn</button><button class="g" onclick="A.del()">Xóa chọn</button></div>
-          <button onclick="A.join()">➕ Tham gia nhóm đã chọn</button><div id="gl"></div></div>
-          <details class="card"><summary>Thêm / Import link nhóm</summary><textarea id="imp" placeholder="Mỗi dòng 1 link nhóm (facebook.com/groups/...)"></textarea><button class="g" onclick="A.imp()">Nhập vào danh mục</button></details></section>
-          <section id="p1" class="h"><div class="card"><small>Hỗ trợ xoay vòng: {Chào|Xin chào} anh/chị — mỗi nhóm một biến thể, tránh trùng nội dung.</small>
-          <textarea id="tx" placeholder="Nội dung bài đăng"></textarea><button onclick="A.post()">📝 Đăng vào nhóm đã vào + đã chọn</button></div></section>
-          <section id="p2" class="h"><div class="card"><input id="su" placeholder="Link bài cần chia sẻ (https://facebook.com/...)"><button onclick="A.share()">↪ Chia sẻ vào nhóm đã vào + đã chọn</button></div></section>
-          <section id="p3" class="h"><div class="card"><b id="acs">Chưa kiểm tra đăng nhập</b>
-          <small>Facebook mở trong cửa sổ riêng của app. Đăng nhập 1 lần, phiên được giữ cho các lần sau (kể cả mã 2 lớp).</small>
-          <input id="an" placeholder="Tên gợi nhớ tài khoản"><button onclick="A.login()">🔑 Đăng nhập Facebook</button>
-          <button class="g" onclick="A.chk()">✓ Kiểm tra đã đăng nhập chưa</button><button class="r" onclick="A.logout()">Đổi tài khoản / xóa phiên</button>
-          <small>iPhone giữ 1 tài khoản tại một thời điểm (không chạy nhiều profile cùng lúc như bản máy tính). Muốn đổi: bấm "Đổi tài khoản" rồi đăng nhập tài khoản khác.</small></div></section>
-          <section id="p4" class="h"><div class="card"><div class="row"><div>Giới hạn/ngày — vào nhóm<input id="lj" type="number"></div><div>Đăng<input id="lp" type="number"></div><div>Chia sẻ<input id="ls" type="number"></div></div>
-          <div class="row"><div>Nghỉ tối thiểu (giây)<input id="d1" type="number"></div><div>Nghỉ tối đa<input id="d2" type="number"></div></div>
-          <label class="it"><input type="checkbox" id="sh"><div>Hiện cửa sổ Facebook khi chạy<small>Tắt = chạy ẩn, luôn thấy bảng tiến độ phía trên (chưa kiểm chứng trên mọi máy)</small></div></label><button class="g" onclick="A.save()">Lưu cài đặt</button><small id="cnt"></small></div>
-          <div class="card"><pre id="lg"></pre></div></section>
+          <header><div class="logo">autu<small>facebook pro</small></div><div class="sp"></div><button class="acc" id="chip" onclick="P('acc')">○ FB chưa kiểm tra</button></header>
+          <main id="main">
+          <div class="card tc"><div class="row"><div><div class="t" id="tcT">TASK CENTER • SẴN SÀNG</div><b id="tcN">Không có tác vụ đang chạy</b></div><div class="fx" style="display:flex;gap:6px"><button class="g s" onclick="A.toggleFb()" id="bFb">Hiện FB</button><button class="r s" onclick="A.stop()">■ Dừng</button></div></div>
+          <div class="bar"><i id="tcB"></i></div><small id="tcS">Trạng thái: sẵn sàng • Tiến độ 0% • Thời gian 00:00</small><br><small id="tcR">Kết quả gần nhất: chưa có kết quả</small></div>
+
+          <section class="pg on" id="pg-groups">
+          <div class="card"><h2>Danh mục nhóm đã quản lý</h2><small id="gSum">0 nhóm</small>
+          <button style="width:100%;margin:8px 0 6px" onclick="A.sync()">↻ Đồng bộ nhóm của tôi</button>
+          <div class="grid2"><button class="g" onclick="A.scan('selected')">Quét đã chọn</button><button class="g" onclick="A.scan('all')">Quét tất cả</button><button class="g" onclick="A.addGroup()">+ Thêm nhóm</button><button class="g" onclick="A.importTxt()">Import TXT</button></div>
+          <input type="file" id="fileTxt" accept=".txt,text/plain" style="display:none"></div>
+          <div class="card"><div class="grid2"><div><small>Bộ lọc</small><select id="gF" onchange="A.setF()"><option>Tất cả</option><option>Đã tham gia</option><option>Chưa tham gia</option><option>Chưa xác minh</option><option>Lỗi</option></select></div>
+          <div><small>Sắp xếp</small><select id="gS" onchange="A.setF()"><option>Thành viên ↓</option><option>Thành viên ↑</option><option>Tên A→Z</option><option>STT gốc</option><option>Đã tham gia trước</option></select></div></div>
+          <input type="search" id="gQ" placeholder="Tìm tên nhóm / URL..." oninput="R.groups()">
+          <label class="k"><input type="checkbox" id="gSkip" onchange="A.setF()"> Bỏ qua nhóm đã OK</label>
+          <div class="grid2"><button class="g s" onclick="A.selAll(1)">Chọn đang lọc</button><button class="g s" onclick="A.selAll(0)">Bỏ chọn</button><button class="g s" onclick="A.delSel()">Xóa đã chọn</button><button class="g s" onclick="A.delVisible()">Xóa đang lọc</button></div></div>
+          <div class="card"><div class="row"><div><b style="font-size:13px">Tiến trình nhóm</b><br><small id="gProg">Sẵn sàng • Đồng bộ nguồn Nhóm của bạn hoặc quét chi tiết.</small></div><b class="fx" id="gCnt" style="color:var(--acc)">0/0</b></div><div class="bar"><i id="gBar"></i></div></div>
+          <div id="gList"></div></section>
+
+          <section class="pg" id="pg-trash"><div class="card"><h2>Nhóm đã xóa</h2><small>Nhóm ở đây không hiện lại khi Đồng bộ / Import / Tìm nhóm. Không rời nhóm trên Facebook.</small>
+          <div class="grid3" style="margin-top:8px"><button class="g s" onclick="A.restore(0)">Khôi phục chọn</button><button class="g s" onclick="A.restore(1)">Khôi phục tất cả</button><button class="g s" onclick="A.unblock()">Bỏ chặn chọn</button></div></div><div id="tList"></div></section>
+
+          <section class="pg" id="pg-find"><div class="card"><h2>Tìm nhóm theo tên / thị trường</h2><small>GROUP CRM CENTER • LIVE ANALYSIS • AUTO RANKING</small>
+          <input type="text" id="fK" placeholder="VD: ô tô, bất động sản, tuyển dụng...">
+          <div class="grid2"><div><small>Tối thiểu thành viên</small><input type="number" id="fMin" value="1000"></div><div><small>Số kết quả tối đa</small><input type="number" id="fMax" value="30"></div></div>
+          <button style="width:100%;margin-top:6px" onclick="A.find()">⌕ Tìm nhóm</button>
+          <div class="grid3" style="margin-top:8px"><button class="g s" onclick="A.fAdd()">Thêm vào danh mục</button><button class="g s" onclick="A.fJoin()">Gửi yêu cầu vào</button><button class="g s" onclick="A.fSel()">Chọn tất cả</button></div></div><div id="fList"></div></section>
+
+          <section class="pg" id="pg-camp">
+          <div class="card"><h2>Chiến dịch PRO</h2><small>Chọn đúng nhóm • đăng • lưu lịch sử</small>
+          <select id="cLib" onchange="A.campLoad()"></select><div class="grid3"><button class="s" onclick="A.campSave(0)">Lưu mới</button><button class="g s" onclick="A.campSave(1)">Cập nhật</button><button class="g s" onclick="A.campDel()">Xóa</button></div></div>
+          <div class="card"><h3>Hành động</h3><select id="cAct" onchange="A.campUi()"><option value="post">Đăng bài mới</option><option value="share">Chia sẻ bài có sẵn</option></select>
+          <div id="cShareBox"><input type="text" id="cUrl" placeholder="Link bài Facebook cần chia sẻ"><div class="row"><div><small>Chống trùng (ngày)</small><input type="number" id="cDd" value="7"></div><button class="g s fx" onclick="A.clearLedger()">Xóa sổ bài này</button></div><small id="cLed"></small></div>
+          <small>Spintax: {Xin chào|Chào cả nhà}. Nhiều mẫu bài: ngăn cách bằng một dòng ---</small><textarea id="cTx" placeholder="Nội dung bài đăng / caption chia sẻ"></textarea></div>
+          <div class="card"><h3>Chọn nhóm chạy</h3><select id="cMode" onchange="A.campUi()"><option>Chọn thủ công</option><option>Theo thành viên</option><option>Đã chọn + lọc TV</option></select>
+          <div class="grid2"><div><small>TV tối thiểu</small><input type="number" id="cMin" value="0"></div><div><small>TV tối đa (0 = không giới hạn)</small><input type="number" id="cMax" value="0"></div></div>
+          <label class="k"><input type="checkbox" id="cRj" checked> Chỉ nhóm đã xác minh tham gia</label><label class="k"><input type="checkbox" id="cRs"> Chỉ nhóm đã quét OK</label>
+          <div class="row"><button class="g" onclick="A.campPick()">Chọn nhóm…</button><b class="fx" id="cCnt" style="color:var(--acc)">0 nhóm</b></div><small id="cDiag"></small></div>
+          <div class="card"><h3>Nhịp chạy</h3><div class="grid3"><div><small>Nghỉ min (s)</small><input type="number" id="cD1" value="60"></div><div><small>Nghỉ max (s)</small><input type="number" id="cD2" value="120"></div><div><small>Chờ đăng (s)</small><input type="number" id="cW" value="6"></div></div></div>
+          <button style="width:100%;margin-bottom:8px" onclick="A.campRun()">▶ Chạy chiến dịch</button>
+          <div class="card"><h3>Hàng đợi</h3><div id="cQ"><small>Chưa có hàng đợi.</small></div></div></section>
+
+          <section class="pg" id="pg-hist"><div class="card"><h2>Lịch sử</h2><div class="kpis" id="hK"></div>
+          <div class="grid2"><select id="hKind" onchange="R.hist()"><option>Tất cả</option><option>Tác vụ</option><option>Chiến dịch</option><option>Đăng bài</option><option>Chia sẻ</option></select><input type="search" id="hQ" placeholder="Tìm nhóm, trạng thái..." oninput="R.hist()"></div>
+          <div class="grid2" style="margin-top:6px"><button class="g s" onclick="A.verify()">✔ Xác minh bài + lấy link</button><button class="g s" onclick="A.exportHist()">⇩ Xuất CSV</button></div></div><div id="hList"></div></section>
+
+          <section class="pg" id="pg-eng"><div class="card"><h2>Tương tác bài đăng</h2><small>Đọc lượt thích / bình luận / chia sẻ từ link bài đã đăng.</small><div class="kpis" id="eK"></div>
+          <div class="grid2"><select id="eP" onchange="R.eng()"><option value="7">7 ngày</option><option value="30">30 ngày</option><option value="0">Tất cả</option></select><select id="eS" onchange="R.eng()"><option>Điểm HQ cao</option><option>Tương tác cao</option><option>Mới nhất</option></select></div>
+          <button style="width:100%;margin-top:6px" onclick="A.engRefresh()">↻ Cập nhật tương tác</button></div><div id="eList"></div></section>
+
+          <section class="pg" id="pg-acc"><div class="card"><h2 id="aT">Chưa kiểm tra đăng nhập</h2><small>Facebook chạy trong trình duyệt riêng của app, giữ phiên đăng nhập (kể cả mã 2 lớp). iPhone dùng 1 tài khoản tại một thời điểm.</small>
+          <button style="width:100%;margin-top:8px" onclick="A.login()">🔑 Đăng nhập Facebook</button><div class="grid2" style="margin-top:6px"><button class="g" onclick="A.chk()">✓ Kiểm tra phiên</button><button class="r" onclick="A.logout()">Đổi tài khoản</button></div></div>
+          <div class="card"><h3>Cài đặt chạy</h3><label class="k"><input type="checkbox" id="sBg" onchange="A.saveSet()"> Chạy khi ẩn app / khóa màn hình (âm thanh nền im lặng)</label>
+          <label class="k"><input type="checkbox" id="sFb" onchange="A.saveSet()"> Hiện cửa sổ Facebook khi chạy</label>
+          <div class="grid2"><div><small>Nghỉ tham gia min (s)</small><input type="number" id="sJ1" onchange="A.saveSet()"></div><div><small>Nghỉ tham gia max (s)</small><input type="number" id="sJ2" onchange="A.saveSet()"></div></div>
+          <small>Giao diện</small><select id="sTh" onchange="A.saveSet()"><option value="auto">Tự động</option><option value="light">Sáng</option><option value="dark">Tối</option></select></div>
+          <div class="card"><h3>Dữ liệu</h3><div class="grid2"><button class="g" onclick="A.backup()">Sao lưu (copy)</button><button class="g" onclick="A.restoreBk()">Khôi phục</button></div><small id="aV"></small></div>
+          <div class="card"><h3>Nhật ký</h3><pre id="lg"></pre></div></section>
           </main>
-          <nav><button class="on" onclick="T(0)">Nhóm</button><button onclick="T(1)">Chiến dịch</button><button onclick="T(2)">Chia sẻ</button><button onclick="T(3)">Tài khoản</button><button onclick="T(4)">Lịch sử</button></nav>
+          <nav id="nav"></nav><div id="sheet" onclick="if(event.target.id=='sheet')A.close()"><div id="shB"></div></div><div id="toast"></div>
           <script>
-          const $=s=>document.querySelector(s),W=ms=>new Promise(r=>setTimeout(r,ms)),K='autu_v1';
-          let S=Object.assign({groups:[],text:'',lim:{j:10,p:15,s:10},dl:[60,150],cnt:{},log:[]},JSON.parse(localStorage.getItem(K)||'{}'));
-          let ref=null,stop=false,busy=false,loaded=false,TC={t:'',d:0,n:0,t0:0};
-          const sv=()=>localStorage.setItem(K,JSON.stringify(S));
-          const day=()=>new Date().toISOString().slice(0,10);
-          function cnt(k){if(S.cnt.d!==day())S.cnt={d:day(),j:0,p:0,s:0};return S.cnt[k]}
-          function L(m){S.log.push(new Date().toLocaleTimeString('vi')+' '+m);S.log=S.log.slice(-150);sv();$('#lg').textContent=S.log.slice(-60).join('\n');$('#st').textContent=m}
-          function T(i){document.querySelectorAll('nav button').forEach((b,j)=>b.classList.toggle('on',i==j));for(let j=0;j<5;j++)$('#p'+j).classList.toggle('h',i!=j);if(i>=3)R()}
-          function mem(t){t=(t||'').trim();if(!t)return 0;const k=/k$/i.test(t),m=/m$/i.test(t),n=t.replace(/[kKmM\s]/g,'');if(k||m)return Math.round(parseFloat(n.replace(',','.'))*(k?1e3:1e6))||0;return parseInt(n.replace(/[.,]/g,''))||0}
-          const fm=n=>!n?'—':n>=1e6?(n/1e6).toFixed(1).replace('.',',')+'M':n>=1e3?(n/1e3).toFixed(1).replace('.',',')+'K':n;
-          const slug=x=>(x.s||'MỚI');
-          function R(){const G=S.groups,f=$('#fl').value,q=($('#q').value||'').toLowerCase();
-           let ix=G.map((g,i)=>i).filter(i=>{const g=G[i],s=slug(g);return(!q||g.name.toLowerCase().includes(q))&&(f=='Tất cả'||(f=='Đã vào'&&s=='ĐÃ VÀO')||(f=='Chờ duyệt'&&s=='CHỜ DUYỆT')||(f=='Chưa vào'&&s=='MỚI')||(f=='Lỗi'&&!['ĐÃ VÀO','CHỜ DUYỆT','MỚI'].includes(s)))});
-           ix.sort($('#so').value=='Tên A-Z'?(a,b)=>G[a].name.localeCompare(G[b].name):(a,b)=>(G[b].m||0)-(G[a].m||0));
-           const c=s=>G.filter(g=>slug(g)==s).length;
-           $('#sum').textContent=`${G.length} nhóm • hiển thị ${ix.length} • Đã vào ${c('ĐÃ VÀO')} • Chưa vào ${c('MỚI')} • Chờ duyệt ${c('CHỜ DUYỆT')}`;
-           $('#gl').innerHTML=ix.slice(0,300).map((i,n)=>{const x=G[i],s=slug(x);return`<label class="it"><input type="checkbox" ${x.c?'checked':''} onchange="S.groups[${i}].c=this.checked;sv()"><div><b>${n+1}. ${x.name}</b><small>${fm(x.m)} thành viên • ${x.url.replace('https://www.facebook.com/groups/','')}</small></div><span class="tg ${s=='ĐÃ VÀO'?'ok':s=='CHỜ DUYỆT'?'wt':s!='MỚI'?'er':''}">${s}</span></label>`}).join('')||'<small>Chưa có nhóm. Bấm "Đồng bộ nhóm của tôi".</small>';
-           $('#tx').value=S.text;$('#lj').value=S.lim.j;$('#lp').value=S.lim.p;$('#ls').value=S.lim.s;$('#d1').value=S.dl[0];$('#d2').value=S.dl[1];$('#cnt').textContent=`Hôm nay: vào ${cnt('j')} • đăng ${cnt('p')} • chia sẻ ${cnt('s')}`;$('#lg').textContent=S.log.slice(-60).join('\n');
-           $('#sh').checked=!S.hide;$('#acs').textContent=S.acc?(S.acc.ok?'● Đã đăng nhập Facebook':'● Chưa đăng nhập')+(S.acc.n?' • '+S.acc.n:''):'Chưa kiểm tra đăng nhập'}
-          /* ---- mã chạy TRONG trang Facebook ---- */
-          const HELP=`(()=>{if(window.__A)return;const A=window.__A={sl:ms=>new Promise(r=>setTimeout(r,ms)),
-          vis:e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length),
-          find(rx,sel){for(const e of document.querySelectorAll(sel||'[role=button],button,a,[role=menuitem],[role=option],[role=tab]')){const t=((e.getAttribute('aria-label')||e.innerText||'')+'').trim();if(t&&t.length<70&&rx.test(t)&&A.vis(e))return e}return null},
-          async click(rx,ms,sel){const end=Date.now()+(ms||6000);while(Date.now()<end){const e=A.find(rx,sel);if(e){e.scrollIntoView({block:'center'});await A.sl(300);e.click();return true}await A.sl(400)}return false},
-          async type(el,t){el.focus();await A.sl(300);document.execCommand('selectAll');document.execCommand('insertText',false,t);el.dispatchEvent(new Event('input',{bubbles:true}))},
-          blocked(){return /(tạm thời bị chặn|temporarily blocked|bị hạn chế|you can.t use this feature|đã bị chặn)/i.test(document.body.innerText.slice(0,4000))},
-          ov(t){let d=document.getElementById('__ov');if(!d){d=document.createElement('div');d.id='__ov';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#0068FF;color:#fff;font:12px sans-serif;padding:4px 8px;text-align:center';document.body.appendChild(d)}d.textContent=t}}})();1`;
-          const TASKS={
-          sync:`const out={};for(let i=0;i<30;i++){const n0=Object.keys(out).length;document.querySelectorAll('a[href*="/groups/"]').forEach(a=>{const m=a.href.match(/\\/groups\\/([\\w.\\-]+)\\/?(\\?|$)/);if(!m||/^(feed|discover|search|joins|create|notifications)$/.test(m[1]))return;const n=(a.innerText||'').split('\\n').map(s=>s.trim()).filter(s=>s.length>2)[0];if(!n)return;let c=a,t='';for(let k=0;k<4&&c;k++){c=c.parentElement;if(c&&/(thành viên|members)/i.test(c.innerText||'')){t=c.innerText;break}}const mm=t.match(/([\\d.,]+\\s*[KkMm]?)\\s*(thành viên|members)/i);out[m[1]]=Object.assign(out[m[1]]||{},{name:n,url:'https://www.facebook.com/groups/'+m[1],m:mm?mm[1]:''})});window.scrollBy(0,3000);await A.sl(1200);if(Object.keys(out).length===n0&&i>3)break}return Object.values(out)`,
-          find:`const out={};for(let i=0;i<7;i++){document.querySelectorAll('a[href*="/groups/"]').forEach(a=>{const m=a.href.match(/\\/groups\\/([\\w.\\-]+)\\/?(\\?|$)/);if(!m||/^(feed|discover|search|joins|create)$/.test(m[1]))return;const n=(a.innerText||'').split('\\n').map(s=>s.trim()).filter(s=>s.length>2)[0];if(n&&!out[m[1]])out[m[1]]={name:n,url:'https://www.facebook.com/groups/'+m[1]}});window.scrollBy(0,2500);await A.sl(1300)}return Object.values(out)`,
-          join:`if(A.blocked())return'BỊ CHẶN';if(A.find(/^(Đã tham gia|Joined)$/))return'ĐÃ VÀO';if(A.find(/(Hủy yêu cầu|Cancel request|Đã gửi yêu cầu|Requested)/))return'CHỜ DUYỆT';
-          if(!await A.click(/^(Tham gia nhóm|Join group|Tham gia|Join)$/,7000))return'KHÔNG THẤY NÚT';await A.sl(2500);if(A.blocked())return'BỊ CHẶN';
-          const d=document.querySelector('[role=dialog]');if(d&&d.querySelector('textarea,input,[role=radio],[role=checkbox]')){await A.click(/^(Đóng|Close)$/,1500);return'CẦN TRẢ LỜI CÂU HỎI'}
-          return A.find(/(Hủy yêu cầu|Cancel request|Đã gửi yêu cầu|Requested)/)?'CHỜ DUYỆT':A.find(/^(Đã tham gia|Joined)$/)?'ĐÃ VÀO':'CHỜ DUYỆT'`,
-          post:`if(A.blocked())return'BỊ CHẶN';if(A.find(/(Tham gia nhóm|Join group)$/))return'CHƯA VÀO NHÓM';
-          if(!await A.click(/^(Bạn viết gì đi|Viết gì đó|Bạn đang nghĩ gì|Write something|What.s on your mind|Tạo bài viết|Create a post)/,9000,'[role=button],div,span'))return'KHÔNG THẤY Ô SOẠN';await A.sl(2000);
-          let tb=null;for(let i=0;i<12&&!tb;i++){tb=[...document.querySelectorAll('[contenteditable=true][role=textbox],[contenteditable=true]')].find(A.vis);await A.sl(500)}
-          if(!tb)return'KHÔNG THẤY KHUNG GÕ';await A.type(tb,__TEXT__);await A.sl(1500);if(!await A.click(/^(Đăng|Post)$/,6000))return'KHÔNG THẤY NÚT ĐĂNG';await A.sl(5000);
-          return A.blocked()?'BỊ CHẶN':'OK'`,
-          share:`if(A.blocked())return'BỊ CHẶN';if(!await A.click(/^(Chia sẻ|Share)$/,9000))return'KHÔNG THẤY NÚT CHIA SẺ';await A.sl(1800);
-          if(!await A.click(/(Nhóm|Group)/,5000,'[role=button],[role=menuitem],[role=option],div[tabindex],span'))return'KHÔNG THẤY MỤC NHÓM';await A.sl(2000);
-          const q=[...document.querySelectorAll('input[type=search],input[type=text],input:not([type])')].find(A.vis);if(!q)return'KHÔNG THẤY Ô TÌM NHÓM';q.focus();document.execCommand('insertText',false,__NAME__);await A.sl(2500);
-          const nm=__NAME__.toLowerCase();const it=[...document.querySelectorAll('[role=button],[role=option],[role=radio],[role=listitem],div[tabindex]')].find(e=>A.vis(e)&&(e.innerText||'').toLowerCase().includes(nm.slice(0,18)));
-          if(!it)return'KHÔNG THẤY NHÓM';it.click();await A.sl(1500);if(!await A.click(/^(Đăng|Post|Chia sẻ ngay|Share now)$/,6000))return'KHÔNG THẤY NÚT ĐĂNG';await A.sl(4500);return A.blocked()?'BỊ CHẶN':'OK'`};
-          /* ---- điều khiển cửa sổ Facebook ---- */
-          function open(url,xo){return new Promise((ok,no)=>{if(!(window.cordova&&cordova.InAppBrowser))return no('Thiếu plugin trình duyệt');
-           ref=cordova.InAppBrowser.open(url||'https://www.facebook.com/','_blank','location=no,toolbar=yes,hidenavigationbuttons=yes,toolbarposition=top,'+(xo||'closebuttoncaption=Dừng'+(S.hide?',hidden=yes':'')));
-           ref.addEventListener('loadstart',()=>loaded=false);ref.addEventListener('loadstop',()=>loaded=true);ref.addEventListener('exit',()=>{stop=true;ref=null});setTimeout(ok,4500)})}
-          const X=c=>new Promise(r=>ref?ref.executeScript({code:c},v=>r(v&&v[0])):r(null));
-          const CHK=`(()=>{const u=location.href;if(document.cookie.includes('c_user='))return'IN';if(/login|checkpoint|recover|two_step|authentication/.test(u)||document.querySelector('input[name=pass],input[type=password]'))return'OUT';return document.body&&document.body.innerText.length>300?'IN':'OUT'})()`;
-          async function needLogin(){for(let i=0;i<30&&!loaded;i++)await W(500);await W(1500);return (await X(CHK))!=='IN'}
-          async function nav(u){loaded=false;await X(`location.href=${JSON.stringify(u)};1`);for(let i=0;i<40&&!loaded;i++)await W(500);await W(2500);await X(HELP)}
-          async function run(body,ms=70000){await X(`window.__r=undefined;(async()=>{try{window.__r=await(async()=>{${body}})()}catch(e){window.__r='LỖI '+e}})();1`);
-           const end=Date.now()+ms;while(Date.now()<end&&!stop){await W(900);const v=await X('JSON.stringify(window.__r===undefined?null:window.__r)');if(v&&v!=='null')return JSON.parse(v)}return stop?'ĐÃ DỪNG':'HẾT GIỜ'}
-          async function pause(){const s=Math.round(S.dl[0]+Math.random()*(S.dl[1]-S.dl[0]));for(let i=s;i>0&&!stop;i--){if(i%5==0){L('Nghỉ '+i+'s');X(`window.__A&&__A.ov('Nghỉ ${i}s — Dừng = đóng cửa sổ này')`)}await W(1000)}}
-          async function job(name,list,key,fn){if(busy)return alert('Đang chạy tác vụ khác');if(!list.length)return alert('Chưa chọn nhóm phù hợp');
-           const cap=S.lim[key];if(cnt(key=='j'?'j':key=='p'?'p':'s')>=cap)return alert('Hôm nay đã đủ giới hạn '+cap);
-           if(!confirm(`${name}: ${list.length} nhóm (nghỉ ${S.dl[0]}-${S.dl[1]}s/nhóm). Facebook mở ra — nếu cần hãy đăng nhập trước, rồi để màn hình sáng.`))return;
-           busy=true;stop=false;TC={t:name,d:0,n:list.length,t0:Date.now()};try{await open();if(await needLogin())throw'Chưa đăng nhập Facebook (vào tab Tài khoản)';try{await W(1500);await window.navigator.wakeLock?.request('screen')}catch(e){}
-            for(const g of list){if(stop)break;const ck=key;if(cnt(ck)>=cap){L('Đủ giới hạn ngày');break}
-             L(name+': '+g.name);await X(`window.__A&&__A.ov(${JSON.stringify(name+': '+g.name)})`);const r=await fn(g);L(' → '+r);
-             if(r=='BỊ CHẶN'){L('Facebook chặn tính năng — DỪNG, nghỉ vài giờ');stop=true;break}
-             if(['OK','ĐÃ VÀO','CHỜ DUYỆT'].includes(r)||r=='CẦN TRẢ LỜI CÂU HỎI'){if(r!='ĐÃ VÀO')S.cnt[ck]=cnt(ck)+1}sv();R();TC.d++;if(list.indexOf(g)<list.length-1)await pause()}
-           }catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;L('Hoàn tất');R()}}
-          const pick=f=>S.groups.filter(g=>g.c&&f(g));
+          const $=s=>document.querySelector(s),W=ms=>new Promise(r=>setTimeout(r,ms)),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+          const Br=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.AutuBrowser;
+          const BUILD='__BUILD__',KEY='autu_state_v3';
+          let S={groups:[],trash:[],hist:[],eng:{},camps:[],ledger:[],set:{skipOk:true,bg:true,showFb:false,theme:'auto',j1:15,j2:30,f:'Tất cả',s:'Thành viên ↓'},acc:null,log:[],camp:null};
+          let SEL=new Set(),TSEL=new Set(),FR=[],FSEL=new Set(),CSEL=new Set(),QUEUE=[],lastRes='',shownN=150;
+          const T={busy:false,stop:false,name:'',done:0,total:0,t0:0,msg:'',fb:false};
+          const now=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())};
+          let svT=null;function sv(){clearTimeout(svT);svT=setTimeout(async()=>{const v=JSON.stringify(S);try{localStorage.setItem(KEY,v)}catch(e){}try{Br()&&await Br().save({key:KEY,value:v})}catch(e){}},400)}
+          function L(m){S.log.push(now().slice(11)+' '+m);S.log=S.log.slice(-200);$('#lg').textContent=S.log.slice(-70).join('\n');sv()}
+          function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)}
+          /* ---------- parsing (port từ bản PC) ---------- */
+          const nfd=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');
+          function m2i(t){if(!t)return 0;let r=nfd(t).toUpperCase().replace(/\s/g,''),m=1;if(r.includes('TRIEU')||/M$/.test(r)){m=1e6;r=r.replace('TRIEU','').replace(/M$/,'')}else if(r.includes('NGHIN')||/K$/.test(r)){m=1e3;r=r.replace('NGHIN','').replace(/K$/,'')}else if(/B$/.test(r)){m=1e9;r=r.replace(/B$/,'')}
+           if(m>1){r=r.replace(/,/g,'.').replace(/[^0-9.]/g,'');return Math.floor(parseFloat(r)*m)||0}return parseInt(r.replace(/\D/g,''))||0}
+          function fmtM(b){if(!b)return'Không thấy';for(const p of[/([\d][\d\s.,]*\s*(?:K|M|B)?)\s+(?:members|member)\b/i,/([\d][\d\s.,]*\s*(?:K|M|B)?)\s+thành\s+viên/i,/([\d][\d\s.,]*\s*(?:nghìn|triệu)?)\s+thành\s+viên/i,/([\d][\d\s.,]*\s*(?:rb|jt)?)\s+anggota\b/i]){const m=b.match(p);if(m)return m[1].replace(/\s+/g,' ').trim()}return'Không thấy'}
+          const BAD=new Set(['facebook','nhóm','groups','thông báo','notifications','trang chủ','home','menu','tìm kiếm','search','bảng feed của bạn','your feed','nhóm của bạn','your groups','khám phá','discover','mời','invite','hoạt động','activity']);
+          function vname(v){v=String(v||'').replace(/\s+/g,' ').trim().replace(/\s*\|\s*Facebook\s*$/i,'').trim();if(v.length<2)return'';if(BAD.has(v.toLowerCase()))return'';if(/^(?:thông báo|notifications?)(?:\s*\(.*\))?$/i.test(v))return'';if(/^(?:nhóm|groups?)(?:\s*\(.*\))?$/i.test(v))return'';return v.slice(0,180)}
+          const RESV=/^(feed|discover|create|notifications|search|joins|for_you|your_groups)$/i;
+          function canon(h){const m=String(h||'').match(/facebook\.com\/groups\/([^/?#]+)/i);if(!m||RESV.test(m[1]))return'';return'https://www.facebook.com/groups/'+m[1]+'/'}
+          function gk(u){const m=String(u||'').match(/facebook\.com\/groups\/([^/?#]+)/i);return m?m[1].toLowerCase():String(u||'').toLowerCase().replace(/\/+$/,'')}
+          function cleanUrl(v){let s=String(v||'').trim();if(!s)return'';if(/^\d+$/.test(s))return'https://www.facebook.com/groups/'+s+'/';if(!/facebook\.com\/groups\//i.test(s))return'';if(!/^http/i.test(s))s='https://'+s.replace(/^\/+/,'');return canon(s)||s}
+          const mnum=g=>{const p=m2i(g.members||'');return p>0?p:(g.members_num|0)};
+          const okRec=g=>{const st=String(g.scan_status||'').toUpperCase(),n=String(g.name||'').trim().toUpperCase();return['OK','ĐỒNG BỘ OK'].includes(st)&&!['','KHÔNG ĐỌC ĐƯỢC','KHÔNG XÁC ĐỊNH','CHƯA QUÉT','THÔNG BÁO'].includes(n)&&mnum(g)>0};
+          const stable=g=>okRec(g)&&String(g.membership_status||'').toUpperCase()=='ĐÃ THAM GIA'&&!!g.membership_verified&&g.sync_verified!==false;
+          function spin(t){let o=t;for(let i=0;i<100;i++){const m=o.match(/\{([^{}]+)\}/);if(!m)break;const c=m[1].split('|').map(x=>x.trim()).filter(Boolean);o=o.slice(0,m.index)+(c.length?c[Math.floor(Math.random()*c.length)]:m[0])+o.slice(m.index+m[0].length)}return o}
+          function pickContent(raw){const b=String(raw||'').split(/\n\s*---+\s*\n/).map(x=>x.trim()).filter(Boolean);return b.length?spin(b[Math.floor(Math.random()*b.length)]):''}
+          /* ---------- chạy trong trang Facebook (stringify, không phụ thuộc biến ngoài) ---------- */
+          function helperFactory(){const A={sl:ms=>new Promise(r=>setTimeout(r,ms)),vis:e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length),
+           find(rx,sel,top){for(const e of document.querySelectorAll(sel||'[role=button],button,a[role=button],[role=menuitem],[role=option],[role=tab]')){const t=((e.getAttribute('aria-label')||e.innerText||'')+'').trim();if(!t||t.length>70||!rx.test(t)||!A.vis(e))continue;if(top&&e.getBoundingClientRect().top>top)continue;return e}return null},
+           async click(rx,ms,sel,top){const end=Date.now()+(ms||6000);while(Date.now()<end){const e=A.find(rx,sel,top);if(e){e.scrollIntoView({block:'center'});await A.sl(300);e.click();return true}await A.sl(400)}return false},
+           async type(el,t){el.focus();await A.sl(300);document.execCommand('selectAll');document.execCommand('insertText',false,t);el.dispatchEvent(new Event('input',{bubbles:true}))},
+           blocked(){return/(tạm thời bị chặn|temporarily blocked|bị hạn chế|you can.t use this feature|bạn hiện không thể)/i.test((document.body?document.body.innerText:'').slice(0,4000))}};return A}
+          const HELP='const A=window.__A||(window.__A=('+helperFactory.toString()+')());';
+          async function pg_collect(A){for(const e of [...document.querySelectorAll('[role=button],button')].slice(0,400)){const t=(e.innerText||'').trim();if(/^(Xem thêm|See more|Xem tất cả|See all)$/i.test(t)&&A.vis(e)){try{e.click()}catch(_){}}}
+           const items=[...document.querySelectorAll('a[href*="/groups/"]')].map(a=>{let n=a,card='';for(let i=0;i<9&&n;i++,n=n.parentElement){const t=(n.innerText||'').trim();if(t.length>0&&t.length<1800&&/thành\s*viên|members?|Lần hoạt động gần nhất|active/i.test(t)){card=t;break}}return{href:a.href||'',text:(a.innerText||'').trim(),aria:(a.getAttribute('aria-label')||'').trim(),card}});
+           window.scrollBy(0,Math.max(innerHeight*2.4,1900));const cs=[...document.querySelectorAll('*')].filter(e=>{const s=getComputedStyle(e);return e.scrollHeight>e.clientHeight+350&&['auto','scroll'].includes(s.overflowY)}).map(e=>({e,l:e.querySelectorAll('a[href*="/groups/"]').length,max:e.scrollHeight-e.clientHeight})).filter(x=>x.l>=2).sort((a,b)=>b.l-a.l).slice(0,4);
+           let bottom=true;for(const x of cs){x.e.scrollTop=Math.min(x.max,x.e.scrollTop+Math.max(x.e.clientHeight*2.2,1500));if(x.e.scrollTop<x.max-30)bottom=false}
+           const d=document.scrollingElement;if(d&&d.scrollTop<d.scrollHeight-d.clientHeight-30)bottom=false;return{items,info:{containers:cs.length,atBottom:bottom}}}
+          async function pg_detail(A){const meta=s=>{const e=document.querySelector(s);return e?e.getAttribute('content')||'':''};
+           const h1s=[...document.querySelectorAll('h1')].map(e=>{const r=e.getBoundingClientRect();return{text:(e.innerText||e.textContent||'').trim(),top:r.top,vis:r.width>1&&r.height>1&&r.bottom>0}}).filter(x=>x.vis).sort((a,b)=>a.top-b.top).map(x=>x.text);
+           let header='';const h=document.querySelector('h1');if(h){let n=h,best=(h.innerText||'').trim();for(let i=0;i<7&&n;i++,n=n.parentElement){const t=(n.innerText||'').trim();if(t.length>best.length&&t.length<5000)best=t;if(/thành\s*viên|members?|nghìn|triệu|\bK\b|\bM\b/i.test(t)&&t.length<5000){best=t;break}}header=best}
+           const controls=[...document.querySelectorAll('div[role=button],a[role=button],button')].map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);const v=r.width>2&&r.height>2&&s.visibility!=='hidden'&&s.display!=='none'&&r.bottom>=0&&r.top<=900;return{t:((e.innerText||e.getAttribute('aria-label')||'')+'').trim(),v}}).filter(x=>x.v&&x.t).map(x=>x.t);
+           return{og:meta('meta[property="og:title"]'),tw:meta('meta[name="twitter:title"]'),h1s,title:document.title,header,body:(document.body?document.body.innerText:'').slice(0,12000),controls,url:location.href}}
+          async function pg_cands(A){const rounds=[];const out={};for(let i=0;i<1;i++){document.querySelectorAll('a[href*="facebook.com/groups/"],a[href*="/groups/"]').forEach(a=>out[a.href]=(a.innerText||a.getAttribute('aria-label')||'').trim());window.scrollBy(0,5000)}return Object.entries(out).map(([href,text])=>({href,text}))}
+          async function pg_join(A){if(A.blocked())return'BỊ CHẶN';if(A.find(/^(Đã tham gia|Joined)$/,0,900))return'ĐÃ THAM GIA';if(A.find(/(Hủy yêu cầu|Cancel request|Đã gửi yêu cầu|Requested)/,0,900))return'ĐÃ GỬI YÊU CẦU';
+           if(!await A.click(/^(Tham gia nhóm|Join group|Tham gia|Join)$/,7000,null,900))return'KHÔNG THẤY NÚT';await A.sl(2500);if(A.blocked())return'BỊ CHẶN';
+           const d=document.querySelector('[role=dialog]');if(d&&d.querySelector('textarea,input,[role=radio],[role=checkbox]')){await A.click(/^(Đóng|Close)$/,1500);return'CẦN MỞ THỦ CÔNG'}
+           return A.find(/(Hủy yêu cầu|Cancel request|Đã gửi yêu cầu|Requested)/,0,900)?'ĐÃ GỬI YÊU CẦU':A.find(/^(Đã tham gia|Joined)$/,0,900)?'ĐÃ THAM GIA':'ĐÃ GỬI YÊU CẦU'}
+          async function pg_post(A,o){if(A.blocked())return{r:'BỊ CHẶN'};if(A.find(/^(Tham gia nhóm|Join group)$/,0,900))return{r:'CHƯA VÀO NHÓM'};
+           if(!await A.click(/^(Bạn viết gì đi|Viết gì đó|Bạn đang nghĩ gì|Write something|What.s on your mind|Tạo bài viết|Create (a )?post)/,9000,'[role=button],div,span'))return{r:'KHÔNG THẤY Ô SOẠN'};await A.sl(2000);
+           let tb=null;for(let i=0;i<12&&!tb;i++){tb=[...document.querySelectorAll('[contenteditable=true][role=textbox],[contenteditable=true]')].find(A.vis);await A.sl(500)}
+           if(!tb)return{r:'KHÔNG THẤY KHUNG GÕ'};await A.type(tb,o.text);await A.sl(1500);if(!await A.click(/^(Đăng|Post)$/,6000))return{r:'KHÔNG THẤY NÚT ĐĂNG'};await A.sl((o.wait||6)*1000);
+           if(A.blocked())return{r:'BỊ CHẶN'};const b=(document.body.innerText||'');return{r:/(đang chờ|chờ phê duyệt|pending|sẽ hiển thị sau khi|admin.*approve)/i.test(b)?'CHỜ DUYỆT':'OK'}}
+          async function pg_share(A,o){if(A.blocked())return{r:'BỊ CHẶN'};if(!await A.click(/^(Chia sẻ|Share)$/,9000))return{r:'KHÔNG THẤY NÚT CHIA SẺ'};await A.sl(1800);
+           if(!await A.click(/(Nhóm|Group)/,5000,'[role=button],[role=menuitem],[role=option],div[tabindex],span'))return{r:'KHÔNG THẤY MỤC NHÓM'};await A.sl(2000);
+           const q=[...document.querySelectorAll('input[type=search],input[type=text],input:not([type])')].find(A.vis);if(!q)return{r:'KHÔNG THẤY Ô TÌM NHÓM'};q.focus();document.execCommand('insertText',false,o.name);await A.sl(2500);
+           const nm=o.name.toLowerCase().slice(0,18);const it=[...document.querySelectorAll('[role=button],[role=option],[role=radio],[role=listitem],div[tabindex]')].find(e=>A.vis(e)&&(e.innerText||'').toLowerCase().includes(nm));
+           if(!it)return{r:'KHÔNG THẤY NHÓM'};it.click();await A.sl(1500);
+           if(o.caption){const tb=[...document.querySelectorAll('[contenteditable=true]')].find(A.vis);if(tb)await A.type(tb,o.caption)}
+           if(!await A.click(/^(Đăng|Post|Chia sẻ ngay|Share now)$/,6000))return{r:'KHÔNG THẤY NÚT ĐĂNG'};await A.sl(4500);return{r:A.blocked()?'BỊ CHẶN':'OK'}}
+          async function pg_perma(A){const out=[];document.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]').forEach(a=>{const m=a.href.match(/(https:\/\/www\.facebook\.com\/groups\/[^/?#]+\/(?:posts|permalink)\/\d+)/);if(m&&!out.includes(m[1]))out.push(m[1])});return out.slice(0,3)}
+          async function pg_eng(A){const b=(document.body?document.body.innerText:'');const pick=rx=>{const m=b.match(rx);return m?m[1]:''};
+           let likes='';for(const e of document.querySelectorAll('[aria-label]')){const a=e.getAttribute('aria-label')||'';const m=a.match(/^([\d.,KkMm]+)\s*(reactions?|cảm xúc|lượt)/i)||a.match(/(reactions?|cảm xúc)[^\d]*([\d.,KkMm]+)/i);if(m){likes=(m[1]&&/\d/.test(m[1]))?m[1]:m[2];break}}
+           return{likes,comments:pick(/([\d.,KkMm]+)\s*(?:bình luận|comments?)/i),shares:pick(/([\d.,KkMm]+)\s*(?:lượt chia sẻ|shares?)/i),ok:b.length>300}}
+          /* ---------- điều khiển trình duyệt nhúng ---------- */
+          const stopped=()=>T.stop;
+          async function sl(ms){const end=Date.now()+ms;while(Date.now()<end&&!T.stop)await W(Math.min(250,end-Date.now()));}
+          async function waitLoad(max=45000){await W(250);const end=Date.now()+max;while(Date.now()<end&&!T.stop){const s=await Br().state();if(!s.loading)return s;await W(400)}return await Br().state()}
+          async function nav(url,settle=1600,mode){await Br().gotoUrl({url,mode});await waitLoad();await sl(settle)}
+          async function run(fn,arg,timeout=90){const code=HELP+'return await ('+fn.toString()+')(A,'+JSON.stringify(arg===undefined?null:arg)+');';const r=await Br().exec({code,timeout});if(r.error)throw new Error(r.error);return r.value===''?null:JSON.parse(r.value)}
+          async function needLogin(){const s=await Br().session();S.acc=Object.assign(S.acc||{},{ok:!!s.loggedIn,uid:s.uid||'',t:Date.now()});sv();return !s.loggedIn}
+          /* ---------- Task Center ---------- */
+          async function task(name,fn,opt={}){if(T.busy){toast('Đang chạy tác vụ khác');return false}
+           if(!Br()){alert('Thiếu plugin trình duyệt AutuBrowser trong bản build này.');return false}
+           Object.assign(T,{busy:true,stop:false,name,done:0,total:opt.total||0,t0:Date.now(),msg:'Đang khởi động...',fb:false});tick();let ok=true;
+           try{if(await needLogin())throw new Error('Chưa đăng nhập Facebook — vào Tài khoản → Đăng nhập.');
+            await Br().keepAlive({on:!!S.set.bg});await Br().openWeb({url:'about:blank',mode:'desktop',show:!!S.set.showFb});T.fb=!!S.set.showFb;
+            await fn()}catch(e){ok=false;L('Lỗi: '+(e.message||e));lastRes='Lỗi: '+(e.message||e)}
+           finally{try{await Br().closeWeb()}catch(e){}try{await Br().keepAlive({on:false})}catch(e){}T.busy=false;T.fb=false;L('Hoàn tất: '+name);sv();R.all();tick()}return ok}
+          function tick(){const pct=T.busy?(T.total?Math.round(T.done/T.total*100):8):0,e=Math.floor((Date.now()-T.t0)/1000),mm=String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
+           $('#tcT').textContent='TASK CENTER • '+(T.busy?'ĐANG CHẠY':'SẴN SÀNG');$('#tcN').textContent=T.busy?T.name+(T.msg?' — '+T.msg:''):'Không có tác vụ đang chạy';$('#tcB').style.width=pct+'%';
+           $('#tcS').textContent='Trạng thái: '+(T.busy?'đang chạy':'sẵn sàng')+' • Tiến độ '+pct+'% • Thời gian '+(T.busy?mm:'00:00');$('#tcR').textContent='Kết quả gần nhất: '+(lastRes||'chưa có kết quả');$('#bFb').textContent=T.fb?'Ẩn FB':'Hiện FB';
+           const c=$('#chip'),a=S.acc;c.textContent=a?(a.ok?'● FB đã đăng nhập':'○ FB chưa đăng nhập'):'○ FB chưa kiểm tra'}
+          setInterval(tick,1000);
+          function prog(msg,done,total){T.msg=msg;if(done!=null)T.done=done;if(total!=null)T.total=total;$('#gProg').textContent=msg;$('#gCnt').textContent=(T.done||0)+'/'+(T.total||0);$('#gBar').style.width=(T.total?Math.round(T.done/T.total*100):T.busy?8:0)+'%';tick()}
+          /* ---------- đọc chi tiết nhóm (port _group_detail) ---------- */
+          function parseDetail(d,url){const body=d.body||'',bl=body.toLowerCase();
+           if(['log in to facebook','đăng nhập facebook','log into facebook','you must log in','bạn phải đăng nhập'].some(x=>bl.includes(x)))throw new Error('Phiên Facebook chưa đăng nhập hoặc đã hết hạn.');
+           if(["this content isn't available","nội dung này hiện không xem được","nội dung này không khả dụng"].some(x=>bl.includes(x)))throw new Error('Facebook báo nhóm hiện không khả dụng với tài khoản này.');
+           let name=vname(d.og)||vname(d.tw);if(!name)for(const t of d.h1s||[]){name=vname(t);if(name)break}if(!name)name=vname(d.title);name=name||'Không xác định';
+           let members=fmtM(d.header),mn=m2i(members);if(mn<=0){members=fmtM(body);mn=m2i(members)}
+           const ctl=(d.controls||[]).map(x=>x.replace(/\s+/g,' ').trim()).join(' | ');
+           let joined=/(?:^|\|\s*)(?:Đã tham gia|Bạn đã tham gia|Joined|Member|Rời nhóm|Leave group)(?:\s*\||$)/i.test(ctl);let avail=/(?:^|\|\s*)(?:Tham gia nhóm|Tham gia|Join group|Join)(?:\s*\||$)/i.test(ctl)&&!joined;
+           if(/(?:Bạn viết gì đi|Bạn đang nghĩ gì|Viết gì đó|Tạo bài viết|Write something|Create post)/i.test(ctl)){joined=true;avail=false}
+           const ok=mn>0&&name!=='Không xác định';
+           return{url:canon(url)||url,name,members:mn>0?members:'Không thấy',members_num:mn,member_count_verified:mn>0,membership_status:joined?'ĐÃ THAM GIA':avail?'CHƯA THAM GIA':'KHÔNG XÁC MINH',membership_verified:!!(joined||avail),scan_status:ok?'OK':'THIẾU DỮ LIỆU',scan_error:ok?'':'Facebook chưa cung cấp đủ tên/số thành viên trong lần đọc này.',scanned_at:now(),enabled:true}}
+          async function detail(url){url=canon(url)||url;let last=null,errs=[];for(let a=0;a<2&&!T.stop;a++){try{await nav(url,a?2200:1300);const d=await run(pg_detail,null,40);const r=parseDetail(d,url);last=r;if(vname(r.name)&&r.members_num>0)return r;if(a==0){await Br().gotoUrl({url});await waitLoad();await sl(1500)}}catch(e){errs.push(e.message);if(/đăng nhập/.test(e.message))throw e;await nav('about:blank',300)}}
+           if(last){if(errs.length&&!last.scan_error)last.scan_error=errs.slice(-2).join(' | ').slice(0,500);return last}throw new Error('Không đọc được nhóm sau 2 lần thử: '+errs.slice(-2).join(' | '))}
+          function mergeInto(cur,it){for(const f of['url','name','members','members_num','member_count_verified','membership_status','membership_verified','sync_verified','sync_source','sync_seen_at','scan_status','scanned_at','scan_error','enabled']){if(!(f in it))continue;if(f=='name'&&!vname(it[f]))continue;if((f=='members'||f=='members_num')&&!it.members_num)continue;cur[f]=it[f]}}
+          const blockedKeys=()=>new Set(S.trash.map(g=>gk(g.url)));
+          /* ---------- đồng bộ nhóm của tôi (port sync_joined_groups) ---------- */
+          async function syncGroups(){return task('Đồng bộ nhóm của tôi',async()=>{const skip=!!S.set.skipOk,ex=blockedKeys(),known={};S.groups.forEach(g=>known[gk(g.url)]=g);const stableKeys=new Set(skip?Object.keys(known).filter(k=>stable(known[k])):[]);
+           const found={};let complete=false;
+           for(const route of['https://www.facebook.com/groups/joins/','https://www.facebook.com/groups/feed/']){if(T.stop)break;prog('Mở nguồn nhóm: '+route.replace('https://www.facebook.com',''));await nav(route,1600);
+            if(/feed\/$/.test(route)){const href=await run(async A=>{const a=document.querySelector('a[href*="/groups/joins"],a[href*="/groups/your_groups"]');return a?a.href:''});if(!href)continue;await nav(href,1200)}
+            let stag=0,bot=0,last=-1;const rounds=90;
+            for(let i=0;i<rounds&&!T.stop;i++){const r=await run(pg_collect,null,40);let added=0;
+             for(const it of(r&&r.items)||[]){const url=canon(it.href);if(!url)continue;const key=gk(url);if(ex.has(key))continue;const cardT=it.card||'';
+              let name='';for(const c of[it.text,it.aria,cardT.split('\n')[0]||'']){let v=String(c||'').replace(/\s+/g,' ').trim().split(/\s+Lần hoạt động gần nhất\s*:/i)[0].trim();v=vname(v);if(v){name=v;break}}
+              let mem=fmtM(cardT),mn=m2i(mem);const cur=found[key];
+              if(!cur){const old=known[key]||{};if(skip&&okRec(old)){if(!name)name=old.name||'';if(mn<=0){mem=old.members||'';mn=old.members_num||m2i(mem)}}
+               found[key]={url,name,members:mn>0?mem:'',members_num:mn,member_count_verified:mn>0,membership_status:'ĐÃ THAM GIA',membership_verified:true,sync_verified:true,sync_source:'NHÓM CỦA BẠN',sync_seen_at:now(),scan_status:name&&mn>0?'OK':'CẦN BỔ SUNG',scanned_at:old.scanned_at||now(),scan_error:'',enabled:old.enabled!==false};added++}
+              else{if(name&&(!vname(cur.name)||name.length>cur.name.length))cur.name=name;if(mn>0){cur.members=mem;cur.members_num=mn;cur.member_count_verified=true}cur.sync_seen_at=now();if(vname(cur.name)&&cur.members_num>0)cur.scan_status='OK'}}
+             const cnt=Object.keys(found).length;if(cnt==last&&added==0)stag++;else stag=0;last=cnt;if(r&&r.info&&r.info.atBottom)bot++;else bot=0;
+             prog('Đã đọc '+cnt+' nhóm • vòng '+(i+1)+'/'+rounds,i+1,rounds);if(cnt>0&&stag>=7&&bot>=2){complete=true;break}await sl(350)}
+            if(Object.keys(found).length)break}
+           const missing=Object.values(found).filter(x=>!vname(x.name)||!(x.members_num>0));prog('Nguồn: '+Object.keys(found).length+' nhóm • cần bổ sung '+missing.length,0,missing.length);
+           for(let i=0;i<missing.length&&!T.stop;i++){const it=missing[i];try{const d=await detail(it.url);Object.assign(d,{membership_status:'ĐÃ THAM GIA',membership_verified:true,sync_verified:true,sync_source:'NHÓM CỦA BẠN',sync_seen_at:now()});found[gk(it.url)]=d;prog((d.name||'')+' • '+(d.members||'—'),i+1,missing.length)}catch(e){it.scan_status='CẦN BỔ SUNG';it.scan_error=String(e.message).slice(0,500);prog('Lỗi: '+String(e.message).slice(0,100),i+1,missing.length)}}
+           const remain=Object.keys(known).filter(k=>!found[k]&&!stableKeys.has(k));const fb={};prog('Xác minh lại '+remain.length+' nhóm chưa OK',0,remain.length);
+           for(let i=0;i<remain.length&&!T.stop;i++){const old=known[remain[i]];try{const d=await detail(old.url);d.sync_source='XÁC MINH TRỰC TIẾP';d.sync_seen_at=now();d.sync_verified=!!d.membership_verified;fb[remain[i]]=d;if(d.membership_status=='ĐÃ THAM GIA')found[remain[i]]=d;prog((d.name||old.name||remain[i])+' • '+d.membership_status,i+1,remain.length)}catch(e){fb[remain[i]]=Object.assign({},old,{sync_source:'XÁC MINH TRỰC TIẾP',sync_seen_at:now(),sync_verified:false,membership_verified:false,membership_status:'KHÔNG XÁC MINH',scan_error:String(e.message).slice(0,500)})}}
+           const merged=Object.assign({},fb,found);if(!Object.keys(merged).length&&!T.stop)throw new Error('Không đọc được nhóm nào. Hãy kiểm tra phiên đăng nhập ở tab Tài khoản.');
+           const ex2={};S.groups.forEach(g=>ex2[gk(g.url)]=g);let added=0,upd=0;const ret=new Set();
+           for(const it of Object.values(merged)){const key=gk(it.url);if(!key||ex.has(key))continue;ret.add(key);it.members_num=it.members_num||m2i(it.members);it.member_count_verified=!!(it.member_count_verified||it.members_num>0);if(!vname(it.name))it.name=(ex2[key]&&ex2[key].name)||'Không xác định';
+            if(ex2[key]){mergeInto(ex2[key],it);upd++}else{S.groups.push(Object.assign({},it));ex2[key]=S.groups[S.groups.length-1];added++}}
+           let kept=0;for(const g of S.groups){const key=gk(g.url);if(key&&!ret.has(key)){if(skip&&stable(g)){kept++;g.sync_skip_note='Đã OK - bỏ qua xác minh lại để tăng tốc';continue}g.sync_verified=false;g.membership_verified=false;g.membership_status='KHÔNG XÁC MINH';g.sync_seen_at=now();g.sync_source='CHƯA XÁC MINH LẦN NÀY';if(!g.scan_error)g.scan_error='Không xuất hiện/không xác minh được trong lần đồng bộ hiện tại.'}}
+           const jc=S.groups.filter(g=>g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified).length;lastRes='Đồng bộ xong • đã tham gia '+jc+' • mới '+added+' • cập nhật '+upd+(kept?' • bỏ qua OK '+kept:'');L(lastRes);H('Tác vụ','', 'Đồng bộ nhóm','OK',lastRes,'');sv()})}
+          /* ---------- quét chi tiết (port scan_groups) ---------- */
+          async function scanGroups(mode){let idx=[];S.groups.forEach((g,i)=>{if(mode=='all'||SEL.has(gk(g.url)))idx.push(i)});if(!S.groups.length)return alert('Danh sách group đang trống.\n\nBấm “Đồng bộ nhóm của tôi” để lấy group từ Facebook.');
+           if(!idx.length)return alert('Chưa chọn nhóm nào để quét.');let skipped=0;if(S.set.skipOk){const n=idx.length;idx=idx.filter(i=>!okRec(S.groups[i]));skipped=n-idx.length;if(!idx.length)return alert('Tất cả nhóm đã OK nên được bỏ qua.\nBỏ dấu chọn ‘Bỏ qua nhóm đã OK’ để ép quét lại.')}
+           return task('Quét chi tiết '+idx.length+' nhóm',async()=>{let ok=0,er=0;for(let n=0;n<idx.length&&!T.stop;n++){const g=S.groups[idx[n]];prog('Đang quét '+(g.name||g.url),n,idx.length);
+            try{const d=await detail(g.url);const keep=g.membership_verified&&g.membership_status=='ĐÃ THAM GIA'&&d.membership_status=='KHÔNG XÁC MINH';Object.assign(g,d);if(keep){g.membership_status='ĐÃ THAM GIA';g.membership_verified=true}g.sync_source=g.sync_source||'QUÉT CHI TIẾT';if(g.scan_status=='OK')ok++;else er++}
+            catch(e){g.scan_status='LỖI';g.scanned_at=now();g.scan_error=String(e.message).slice(0,500);er++}
+            prog((g.name||'')+' • '+(g.members||'—')+' • '+g.membership_status,n+1,idx.length);sv();R.groups();await sl(160)}
+            lastRes='Quét xong • OK '+ok+' • lỗi/thiếu '+er+(skipped?' • bỏ qua '+skipped:'');L(lastRes);H('Tác vụ','','Quét chi tiết','OK',lastRes,'')},{total:idx.length})}
+          /* ---------- tìm nhóm / tham gia ---------- */
+          async function findGroups(){const kw=$('#fK').value.trim();if(!kw)return toast('Nhập từ khóa');const mn=+$('#fMin').value||0,mx=+$('#fMax').value||30;
+           return task('Tìm nhóm: '+kw,async()=>{await nav('https://www.facebook.com/search/groups/?q='+encodeURIComponent(kw),3000);const pool={},target=Math.min(Math.max(mx*3,20),120);
+            for(let i=0;i<12&&!T.stop;i++){const items=await run(pg_cands,null,30);for(const it of items||[]){const u=canon(it.href);if(!u)continue;const k=gk(u);if(!pool[k])pool[k]={url:u,name:String(it.text||'').replace(/\s+/g,' ').trim().slice(0,300)}}prog('Ứng viên: '+Object.keys(pool).length,i+1,12);if(Object.keys(pool).length>=target)break;await sl(1100)}
+            const list=Object.values(pool).slice(0,target),res=[];const bl=blockedKeys();
+            for(let i=0;i<list.length&&!T.stop&&res.length<mx;i++){const c=list[i];if(bl.has(gk(c.url)))continue;prog('Quét '+(c.name||c.url),i,list.length);try{const d=await detail(c.url);if(mn<=0||d.members_num>=mn){d.join_status='';res.push(d);FR=res.slice();R.find()}}catch(e){}prog((c.name||'')+' • '+res.length+' đạt lọc',i+1,list.length)}
+            FR=res.sort((a,b)=>b.members_num-a.members_num);FSEL.clear();lastRes='Tìm thấy '+FR.length+' nhóm cho “'+kw+'”';L(lastRes);R.find();H('Tác vụ','','Tìm nhóm: '+kw,'OK',lastRes,'')},{total:0})}
+          async function joinSelected(){const list=FR.filter(g=>FSEL.has(gk(g.url)));if(!list.length)return alert('Chọn các group cần gửi yêu cầu tham gia.');if(!confirm('Gửi yêu cầu tham gia '+list.length+' group?\nGroup có câu hỏi sẽ được đánh dấu CẦN MỞ THỦ CÔNG.'))return;
+           return task('Tham gia '+list.length+' nhóm',async()=>{for(let i=0;i<list.length&&!T.stop;i++){const g=list[i];prog('Tham gia: '+g.name,i,list.length);await nav(g.url,1800);let r;try{r=await run(pg_join,null,60)}catch(e){r='LỖI '+e.message}g.join_status=r;L(' → '+r);H('Tác vụ','',g.name,r=='ĐÃ GỬI YÊU CẦU'||r=='ĐÃ THAM GIA'?'OK':'LỖI','Tham gia nhóm: '+r,g.url);R.find();prog(g.name+' → '+r,i+1,list.length);if(r=='BỊ CHẶN'){L('Facebook chặn tính năng — DỪNG');T.stop=true;break}if(i<list.length-1){const s=Math.round(S.set.j1+Math.random()*Math.max(0,S.set.j2-S.set.j1));for(let k=s;k>0&&!T.stop;k--){if(k%5==0)prog('Nghỉ '+k+'s',null,null);await W(1000)}}}
+            lastRes='Đã xử lý tham gia '+list.length+' nhóm'},{total:list.length})}
+          /* ---------- chiến dịch ---------- */
+          function campRead(){return{name:'',act:$('#cAct').value,url:$('#cUrl').value.trim(),dd:+$('#cDd').value||0,text:$('#cTx').value,mode:$('#cMode').value,min:Math.max(0,+$('#cMin').value||0),max:Math.max(0,+$('#cMax').value||0),rj:$('#cRj').checked,rs:$('#cRs').checked,d1:+$('#cD1').value||60,d2:+$('#cD2').value||120,wait:+$('#cW').value||6,sel:[...CSEL]}}
+          function campWrite(c){$('#cAct').value=c.act||'post';$('#cUrl').value=c.url||'';$('#cDd').value=c.dd==null?7:c.dd;$('#cTx').value=c.text||'';$('#cMode').value=c.mode||'Chọn thủ công';$('#cMin').value=c.min||0;$('#cMax').value=c.max||0;$('#cRj').checked=c.rj!==false;$('#cRs').checked=!!c.rs;$('#cD1').value=c.d1||60;$('#cD2').value=c.d2||120;$('#cW').value=c.wait||6;CSEL=new Set(c.sel||[]);A.campUi()}
+          function campReason(g,c){let mn=c.min,mx=c.max;if(mx&&mn&&mx<mn)[mn,mx]=[mx,mn];const n=mnum(g),st=String(g.scan_status||'').toUpperCase(),jn=String(g.membership_status||'').toUpperCase(),cv=!!g.member_count_verified&&n>0;
+           if(c.rj&&(jn!='ĐÃ THAM GIA'||!g.membership_verified))return'not_joined';if(c.rs&&!['OK','ĐỒNG BỘ OK'].includes(st))return'not_scanned';if(mn>0||mx>0){if(!cv)return'count_unverified';if(mn>0&&n<mn)return'under_min';if(mx>0&&n>mx)return'over_max'}return''}
+          function campGroups(c){let base=c.mode=='Theo thành viên'?S.groups:S.groups.filter(g=>c.sel.includes(gk(g.url)));const seen=new Set();return base.filter(g=>campReason(g,c)==''&&!seen.has(gk(g.url))&&seen.add(gk(g.url))).sort((a,b)=>mnum(b)-mnum(a)||String(a.name).localeCompare(b.name))}
+          function ledgerKeys(src,days){const cut=Date.now()-days*864e5;return new Set(S.ledger.filter(x=>x.src==src&&x.t>=cut&&x.ok).map(x=>x.g))}
+          const srcKey=u=>{const m=String(u).match(/(?:posts|permalink|videos|reel|watch|share\/[pvr])\/?([\w.\-]+)|[?&](?:story_fbid|v|fbid)=(\d+)/i);return(m?(m[1]||m[2]):String(u)).toLowerCase()};
+          function campRun(){const c=campRead(),share=c.act=='share';if(share&&!/(facebook\.com|fb\.watch|fb\.com)/i.test(c.url))return alert('Hãy dán link bài viết Facebook cần chia sẻ.');if(!share&&!c.text.trim())return alert('Nội dung bài đăng đang trống.');
+           let gs=campGroups(c);if(!gs.length){const d=campDiag(c);return alert('Không có group nào vượt qua bộ lọc.\n\nChưa xác minh tham gia: '+d.not_joined+'\nChưa quét OK: '+d.not_scanned+'\nChưa xác minh số TV: '+d.count_unverified+'\nDưới ngưỡng: '+d.under_min+'\nTrên ngưỡng: '+d.over_max)}
+           let skippedDup=0;if(share&&c.dd>0){const done=ledgerKeys(srcKey(c.url),c.dd);const n=gs.length;gs=gs.filter(g=>!done.has(gk(g.url)));skippedDup=n-gs.length;if(!gs.length)return alert('Tất cả '+n+' nhóm đã nhận bài này trong '+c.dd+' ngày qua.\nĐặt “Chống trùng” = 0 hoặc bấm “Xóa sổ bài này” để chia sẻ lại.')}
+           if(!confirm((share?'Chia sẻ':'Đăng bài')+' vào '+gs.length+' nhóm'+(skippedDup?' (bỏ qua '+skippedDup+' nhóm đã chia sẻ)':'')+'?\nNhóm nhiều thành viên chạy trước. Nghỉ '+c.d1+'-'+c.d2+'s/nhóm.'))return;
+           QUEUE=gs.map(g=>({g:gk(g.url),name:g.name,st:'CHỜ',note:''}));R.queue();const name=(share?'Chia sẻ ':'Đăng bài ')+gs.length+' nhóm';
+           return task(name,async()=>{let ok=0,bad=0;const stat={};
+            for(let i=0;i<gs.length&&!T.stop;i++){const g=gs[i],q=QUEUE[i];q.st='ĐANG CHẠY';R.queue();prog(g.name,i,gs.length);let r='LỖI',link='',err='';
+             const why=campReason(g,c);if(why){r='SKIPPED_FILTER';err='BỘ LỌC: '+why}else{
+              try{const t0=Date.now();if(share){await nav(c.url,2500);const cap=pickContent(c.text);const o=await run(pg_share,{name:g.name,caption:cap},100);r=o.r}else{await nav(g.url,2000);const o=await run(pg_post,{text:pickContent(c.text),wait:c.wait},110);r=o.r}
+               if(r=='OK'||r=='CHỜ DUYỆT'){ok++;if(share)S.ledger.push({src:srcKey(c.url),g:gk(g.url),t:Date.now(),ok:true})}else{bad++;err=r}}catch(e){bad++;err=e.message;r='LỖI'}}
+             q.st=r=='OK'?'THÀNH CÔNG':r=='CHỜ DUYỆT'?'CHỜ DUYỆT':r=='SKIPPED_FILTER'?'BỎ QUA':'LỖI';q.note=err;R.queue();L((share?'Chia sẻ':'Đăng')+': '+g.name+' → '+r);
+             H(share?'Chia sẻ':'Đăng bài','',g.name,r,err||'',link,g.url,share?c.url:'');prog(g.name+' → '+r,i+1,gs.length);sv();
+             if(r=='BỊ CHẶN'){L('Facebook chặn tính năng — DỪNG, nghỉ vài giờ');T.stop=true;break}
+             if(i<gs.length-1&&!T.stop&&r!='SKIPPED_FILTER'){const s=Math.round(c.d1+Math.random()*Math.max(0,c.d2-c.d1));for(let k=s;k>0&&!T.stop;k--){if(k%3==0){prog('Nghỉ '+k+'s trước nhóm kế tiếp',null,null);await Br().setBarTitle({title:'Nghỉ '+k+'s'})}await W(1000)}}}
+            lastRes=name+' • thành công '+ok+' • lỗi '+bad+(T.stop?' • đã dừng':'')},{total:gs.length})}
+          function campDiag(c){const d={not_joined:0,not_scanned:0,count_unverified:0,under_min:0,over_max:0};(c.mode=='Theo thành viên'?S.groups:S.groups.filter(g=>c.sel.includes(gk(g.url)))).forEach(g=>{const r=campReason(g,c);if(r)d[r]++});return d}
+          /* ---------- lịch sử / tương tác ---------- */
+          function H(kind,acc,target,status,detail,link,gurl,src){S.hist.unshift({id:Date.now()+Math.random(),time:now(),kind,acc:acc||(S.acc&&S.acc.uid)||'',target,status,detail,link:link||'',gurl:gurl||'',src:src||''});S.hist=S.hist.slice(0,3000);sv()}
+          const sOK=s=>/^(OK|THÀNH CÔNG)$/.test(s),sPend=s=>/CHỜ DUYỆT/.test(s);
+          async function verifyPosts(){const rows=S.hist.filter(h=>h.kind=='Đăng bài'&&(sOK(h.status)||sPend(h.status))&&!h.link&&h.gurl).slice(0,40);if(!rows.length)return toast('Không có bài nào thiếu link');
+           return task('Xác minh bài + lấy link ('+rows.length+')',async()=>{let got=0;for(let i=0;i<rows.length&&!T.stop;i++){const h=rows[i],uid=(S.acc&&S.acc.uid)||'';prog(h.target,i,rows.length);await nav(h.gurl.replace(/\/$/,'')+'/user/'+uid+'/',2500);let l=[];try{l=await run(pg_perma,null,30)||[]}catch(e){}if(l[0]){h.link=l[0];h.status='THÀNH CÔNG';got++}prog(h.target+(l[0]?' ✓':' —'),i+1,rows.length);sv();R.hist()}lastRes='Lấy được '+got+'/'+rows.length+' link bài'},{total:rows.length})}
+          async function engRefresh(){const per=+$('#eP').value,cut=per?Date.now()-per*864e5:0;const rows=S.hist.filter(h=>h.link&&(!cut||Date.parse(h.time.replace(' ','T'))>=cut)).slice(0,60);if(!rows.length)return alert('Chưa có bài nào có link. Vào Lịch sử → “Xác minh bài + lấy link” trước.');
+           return task('Cập nhật tương tác ('+rows.length+')',async()=>{let n=0;for(let i=0;i<rows.length&&!T.stop;i++){const h=rows[i];prog(h.target,i,rows.length);await nav(h.link,2600);try{const e=await run(pg_eng,null,30);if(e&&e.ok){(S.eng[h.link]=S.eng[h.link]||[]).push({t:now(),likes:m2i(e.likes),comments:m2i(e.comments),shares:m2i(e.shares)});S.eng[h.link]=S.eng[h.link].slice(-30);n++}}catch(x){}prog(h.target,i+1,rows.length);sv();R.eng()}lastRes='Đã cập nhật tương tác '+n+'/'+rows.length+' bài'},{total:rows.length})}
+          /* ---------- render ---------- */
+          const chip=(t,c)=>'<i class="chip '+(c||'')+'">'+esc(t)+'</i>';
+          function gRows(){const f=S.set.f,so=S.set.s,q=($('#gQ').value||'').trim().toLowerCase(),out=[];S.groups.forEach((g,i)=>{const m=String(g.membership_status||'KHÔNG XÁC MINH').toUpperCase(),sc=String(g.scan_status||'').toUpperCase();if(q&&!((g.name||'')+' '+(g.url||'')).toLowerCase().includes(q))return;if(f=='Đã tham gia'&&m!='ĐÃ THAM GIA')return;if(f=='Chưa tham gia'&&m!='CHƯA THAM GIA')return;if(f=='Chưa xác minh'&&m!='KHÔNG XÁC MINH')return;if(f=='Lỗi'&&sc!='LỖI')return;out.push([i,g,mnum(g)])});
+           const nm=r=>String(r[1].name||'').toLowerCase();if(so=='Thành viên ↓')out.sort((a,b)=>b[2]-a[2]||nm(a).localeCompare(nm(b)));else if(so=='Thành viên ↑')out.sort((a,b)=>a[2]-b[2]||nm(a).localeCompare(nm(b)));else if(so=='Tên A→Z')out.sort((a,b)=>nm(a).localeCompare(nm(b)));else if(so=='Đã tham gia trước')out.sort((a,b)=>(b[1].membership_status=='ĐÃ THAM GIA')-(a[1].membership_status=='ĐÃ THAM GIA')||b[2]-a[2]);return out}
+          function gItem(g,rank,sel,onchg){const m=String(g.membership_status||'KHÔNG XÁC MINH').toUpperCase(),sc=String(g.scan_status||'').toUpperCase(),tone=(sc=='LỖI'||sc=='CẦN ĐĂNG NHẬP')?'er':m=='KHÔNG XÁC MINH'?'uv':['OK','ĐỒNG BỘ OK'].includes(sc)?'ok':'';const n=mnum(g);
+           return'<label class="gi '+tone+'"><input type="checkbox" '+(sel?'checked':'')+' onchange="'+onchg+'"><div class="gb"><b>'+rank+'. '+esc(g.name||'Chưa quét')+'</b><small>'+(g.members||(n?n.toLocaleString('vi'):'—'))+' thành viên • '+esc(String(g.url||'').replace('https://www.facebook.com/groups/','').replace(/\/$/,''))+'</small><div class="chips">'+chip(m,m=='ĐÃ THAM GIA'?'ok':m=='CHƯA THAM GIA'?'bl':'wt')+chip('DUYỆT BÀI: '+(g.approval_status||g.post_approval||'CHƯA KIỂM TRA'))+chip(g.sync_source||(g.membership_verified?'QUÉT CHI TIẾT':'—'))+chip(g.scan_status||'Chưa quét',sc=='LỖI'?'er':sc=='OK'?'ok':'')+'</div>'+((g.scan_error||g.sync_skip_note)?'<span class="note">'+esc(String(g.scan_error||g.sync_skip_note).slice(0,200))+'</span>':'')+'<span class="note">Quét: '+esc(g.scanned_at||g.sync_seen_at||'—')+'</span></div></label>'}
+          const R={groups(){const rows=gRows(),G=S.groups;const j=G.filter(g=>g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified).length,nj=G.filter(g=>g.membership_status=='CHƯA THAM GIA'&&g.membership_verified).length,vc=G.filter(g=>g.member_count_verified&&g.members_num>0).length;
+            $('#gSum').textContent=G.length+' nhóm • hiển thị '+rows.length+' • Đã tham gia '+j+' • Chưa tham gia '+nj+' • Chưa xác minh '+(G.length-j-nj)+' • Có số TV '+vc+' • Đã xóa '+S.trash.length;
+            $('#gList').innerHTML=rows.slice(0,shownN).map((r,n)=>gItem(r[1],n+1,SEL.has(gk(r[1].url)),"A.tg('"+gk(r[1].url).replace(/'/g,'')+"',this.checked)")).join('')+(rows.length>shownN?'<button class="g" style="width:100%" onclick="shownN+=150;R.groups()">Hiện thêm ('+(rows.length-shownN)+')</button>':'')||'<div class="card"><small>Chưa có nhóm. Bấm “Đồng bộ nhóm của tôi”.</small></div>';nbadge()},
+           trash(){$('#tList').innerHTML=S.trash.map((g,i)=>gItem(g,i+1,TSEL.has(gk(g.url)),"A.tt('"+gk(g.url).replace(/'/g,'')+"',this.checked)").replace('</div></label>','<span class="note">Xóa: '+esc(g.deleted_at||'')+' • '+esc(g.delete_reason||'')+'</span></div></label>')).join('')||'<div class="card"><small>Thùng rác trống.</small></div>'},
+           find(){$('#fList').innerHTML=FR.map((g,i)=>gItem(g,i+1,FSEL.has(gk(g.url)),"A.tf('"+gk(g.url).replace(/'/g,'')+"',this.checked)").replace('</div></label>',(g.join_status?'<span class="note">Tham gia: '+esc(g.join_status)+'</span>':'')+'</div></label>')).join('')||'<div class="card"><small>Chưa có kết quả tìm nhóm.</small></div>'},
+           camp(){const c=campRead(),gs=campGroups(c);$('#cCnt').textContent=gs.length+' nhóm sẽ chạy';const d=campDiag(c);$('#cDiag').textContent='Loại: chưa tham gia '+d.not_joined+' • chưa quét '+d.not_scanned+' • chưa rõ TV '+d.count_unverified+' • dưới ngưỡng '+d.under_min+' • trên ngưỡng '+d.over_max;
+            $('#cLib').innerHTML='<option value="">— Chiến dịch mới —</option>'+S.camps.map(x=>'<option>'+esc(x.name)+'</option>').join('');$('#cLib').value=S.camp||'';const k=srcKey($('#cUrl').value);$('#cLed').textContent=$('#cUrl').value?'Sổ chia sẻ: '+S.ledger.filter(x=>x.src==k&&x.ok).length+' nhóm đã nhận bài này':''},
+           queue(){$('#cQ').innerHTML=QUEUE.length?QUEUE.map((q,i)=>'<div class="gi"><div class="gb"><b>'+(i+1)+'. '+esc(q.name)+'</b><div class="chips">'+chip(q.st,q.st=='THÀNH CÔNG'?'ok':q.st=='LỖI'?'er':q.st=='ĐANG CHẠY'?'bl':q.st=='CHỜ DUYỆT'?'wt':'')+'</div>'+(q.note?'<span class="note">'+esc(q.note)+'</span>':'')+'</div></div>').join(''):'<small>Chưa có hàng đợi.</small>'},
+           hist(){const k=$('#hKind').value,q=($('#hQ').value||'').toLowerCase();let rows=S.hist.filter(h=>(k=='Tất cả'||(k=='Chiến dịch'?/Đăng|Chia/.test(h.kind):h.kind==k))&&(!q||(h.target+' '+h.status+' '+h.detail+' '+h.kind).toLowerCase().includes(q)));
+            const ok=rows.filter(h=>sOK(h.status)).length,pe=rows.filter(h=>sPend(h.status)||(h.kind=='Đăng bài'&&sOK(h.status)&&!h.link)).length,er=rows.filter(h=>!sOK(h.status)&&!sPend(h.status)&&!/SKIPPED/.test(h.status)).length;
+            $('#hK').innerHTML=[['Tổng',rows.length],['Thành công',ok],['Chờ duyệt / chưa link',pe],['Lỗi',er]].map(a=>'<div class="kp">'+a[0]+'<b>'+a[1]+'</b></div>').join('');
+            $('#hList').innerHTML=rows.slice(0,200).map(h=>'<div class="gi"><div class="gb"><b>'+esc(h.target)+'</b><small>'+esc(h.time)+' • '+esc(h.kind)+'</small><div class="chips">'+chip(h.status,sOK(h.status)?'ok':sPend(h.status)?'wt':/SKIPPED/.test(h.status)?'':'er')+(h.link?chip('CÓ LINK','bl'):'')+'</div>'+(h.detail?'<span class="note">'+esc(h.detail)+'</span>':'')+(h.link?'<span class="note" onclick="Br().openExternal({url:\''+esc(h.link)+'\'})" style="color:var(--acc)">'+esc(h.link)+'</span>':'')+'</div></div>').join('')||'<div class="card"><small>Chưa có lịch sử.</small></div>'},
+           eng(){const per=+$('#eP').value,cut=per?Date.now()-per*864e5:0,so=$('#eS').value;let rows=S.hist.filter(h=>h.link&&S.eng[h.link]&&(!cut||Date.parse(h.time.replace(' ','T'))>=cut)).map(h=>{const a=S.eng[h.link],l=a[a.length-1],sc=l.likes+l.comments*2+l.shares*3;return{h,l,sc}});
+            rows.sort(so=='Mới nhất'?(a,b)=>b.h.time.localeCompare(a.h.time):so=='Tương tác cao'?(a,b)=>(b.l.likes+b.l.comments+b.l.shares)-(a.l.likes+a.l.comments+a.l.shares):(a,b)=>b.sc-a.sc);
+            const tot=rows.reduce((s,r)=>({l:s.l+r.l.likes,c:s.c+r.l.comments,s:s.s+r.l.shares}),{l:0,c:0,s:0});$('#eK').innerHTML=[['Bài',rows.length],['Thích',tot.l],['Bình luận',tot.c],['Chia sẻ',tot.s]].map(a=>'<div class="kp">'+a[0]+'<b>'+a[1]+'</b></div>').join('');
+            $('#eList').innerHTML=rows.map(r=>'<div class="gi"><div class="gb"><b>'+esc(r.h.target)+'</b><small>'+esc(r.h.time)+' • cập nhật '+esc(S.eng[r.h.link].slice(-1)[0].t)+'</small><div class="chips">'+chip('👍 '+r.l.likes,'bl')+chip('💬 '+r.l.comments,'bl')+chip('↪ '+r.l.shares,'bl')+chip('ĐIỂM '+r.sc,'ok')+'</div></div></div>').join('')||'<div class="card"><small>Chưa có dữ liệu tương tác. Bấm “Cập nhật tương tác”.</small></div>'},
+           acc(){const a=S.acc;$('#aT').textContent=a?(a.ok?'● Đã đăng nhập Facebook'+(a.uid?' • ID '+a.uid:''):'● Chưa đăng nhập'):'Chưa kiểm tra đăng nhập';$('#sBg').checked=!!S.set.bg;$('#sFb').checked=!!S.set.showFb;$('#sJ1').value=S.set.j1;$('#sJ2').value=S.set.j2;$('#sTh').value=S.set.theme;$('#aV').textContent='Autu Pro • build '+BUILD+(Br()?' • trình duyệt nhúng: sẵn sàng':' • THIẾU plugin trình duyệt');$('#lg').textContent=S.log.slice(-70).join('\n')},
+           all(){R.groups();R.trash();R.find();R.camp();R.queue();R.hist();R.eng();R.acc();tick()}};
+          function nbadge(){const b=$('#nav-trash b');if(b)b.textContent=S.trash.length?'Đã xóa '+S.trash.length:'Đã xóa'}
+          /* ---------- hành động ---------- */
           const A={
-           async sync(){if(busy)return;busy=true;stop=false;TC={t:'Đồng bộ nhóm của tôi',d:0,n:0,t0:Date.now()};try{await open();if(await needLogin())throw'Chưa đăng nhập Facebook (vào tab Tài khoản)';L('Đồng bộ nhóm của bạn...');await nav('https://www.facebook.com/groups/joins/');
-            const r=await run(TASKS.sync,150000);let n=0,u=0;if(Array.isArray(r))for(const g of r){const e=S.groups.find(x=>x.url.toLowerCase()==g.url.toLowerCase()),m=mem(g.m);if(e){e.name=g.name;if(m)e.m=m;e.s='ĐÃ VÀO';u++}else{S.groups.push({name:g.name,url:g.url,m,s:'ĐÃ VÀO'});n++}}
-            L('Đồng bộ xong: '+(Array.isArray(r)?r.length:0)+' nhóm • mới '+n+' • cập nhật '+u)}catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;sv();R()}},
-           imp(){let n=0;($('#imp').value.match(/facebook\.com\/groups\/[\w.\-]+/g)||[]).forEach(x=>{const u='https://www.'+x;if(!S.groups.some(g=>g.url.toLowerCase()==u.toLowerCase())){S.groups.push({name:x.split('/').pop(),url:u,m:0,s:'MỚI'});n++}});$('#imp').value='';sv();R();L('Đã nhập '+n+' nhóm')},
-           stopAll(){stop=true;try{ref&&ref.close()}catch(e){}L('Đã yêu cầu dừng')},
-           login(){if(busy)return;if(!(window.cordova&&cordova.InAppBrowser))return alert('Thiếu plugin trình duyệt');let done=false;
-            const w=cordova.InAppBrowser.open('https://www.facebook.com/login','_blank','location=no,toolbar=yes,closebuttoncaption=Xong,toolbarposition=top');
-            const test=()=>{if(done)return;w.executeScript({code:CHK},v=>{if(v&&v[0]==='IN'&&!done){done=true;S.acc={ok:true,n:$('#an').value||(S.acc&&S.acc.n)||'',t:Date.now()};sv();w.close();L('Đã đăng nhập Facebook ✓');T(0);R();setTimeout(()=>alert('Đăng nhập thành công ✓ — đã quay lại app'),500)}})};
-            w.addEventListener('loadstop',()=>setTimeout(test,2000));w.addEventListener('exit',()=>{if(!done)setTimeout(A.chk,600)})},
-           async chk(){if(busy)return;busy=true;stop=false;TC={t:'Kiểm tra đăng nhập',d:0,n:0,t0:Date.now()};try{await open(0,'closebuttoncaption=Dừng,hidden=yes');const out=await needLogin();S.acc={ok:!out,n:$('#an').value||(S.acc&&S.acc.n)||'',t:Date.now()};L(out?'Chưa đăng nhập Facebook':'Đã đăng nhập Facebook ✓')}catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;sv();R()}},
-           logout(){if(busy||!confirm('Xóa phiên đăng nhập Facebook trên app để đăng nhập tài khoản khác?'))return;S.acc={ok:false,n:''};sv();cordova.InAppBrowser.open('https://www.facebook.com/','_blank','location=no,toolbar=yes,clearcache=yes,clearsessioncache=yes,closebuttoncaption=Xong,toolbarposition=top');R()},
-           sel(v){S.groups.forEach(g=>g.c=!!v);sv();R()},del(){S.groups=S.groups.filter(g=>!g.c);sv();R()},
-           save(){S.text=$('#tx').value;S.lim={j:+$('#lj').value||10,p:+$('#lp').value||15,s:+$('#ls').value||10};S.hide=!$('#sh').checked;S.dl=[+$('#d1').value||60,Math.max(+$('#d2').value||150,+$('#d1').value||60)];sv();alert('Đã lưu')},
-           async find(){const k=$('#kw').value.trim();if(!k||busy)return;busy=true;stop=false;TC={t:'Tìm nhóm: '+k,d:0,n:0,t0:Date.now()};try{await open();if(await needLogin())throw'Chưa đăng nhập Facebook (vào tab Tài khoản)';L('Tìm nhóm: '+k);await nav('https://www.facebook.com/search/groups/?q='+encodeURIComponent(k));
-            const r=await run(TASKS.find,60000);let n=0;if(Array.isArray(r))for(const g of r)if(!S.groups.some(x=>x.url==g.url)){S.groups.push({...g,s:'MỚI'});n++}L('Tìm thấy '+(Array.isArray(r)?r.length:0)+' • thêm mới '+n)}catch(e){L('Lỗi: '+e)}finally{try{ref&&ref.close()}catch(e){}ref=null;busy=false;sv();R()}},
-           join(){job('Tham gia',pick(g=>g.s!='ĐÃ VÀO'&&g.s!='CHỜ DUYỆT'),'j',async g=>{await nav(g.url);const r=await run(TASKS.join);g.s=r;return r})},
-           post(){A.save();if(!S.text.trim())return alert('Nhập nội dung bài');job('Đăng bài',pick(g=>g.s=='ĐÃ VÀO'),'p',async g=>{await nav(g.url);
-            const t=S.text.replace(/\{([^{}]+)\}/g,(m,a)=>{const o=a.split('|');return o[Math.floor(Math.random()*o.length)]});const r=await run(TASKS.post.replace('__TEXT__',JSON.stringify(t)),90000);g.last=r;return r})},
-           share(){const u=$('#su').value.trim();if(!/facebook\.com|fb\.watch|fb\.com/.test(u))return alert('Nhập link bài Facebook');job('Chia sẻ',pick(g=>g.s=='ĐÃ VÀO'),'s',async g=>{await nav(u);
-            return await run(TASKS.share.split('__NAME__').join(JSON.stringify(g.name)),90000)})}};
-          R();
-          function TR(){const e=Math.floor((Date.now()-TC.t0)/1000),mm=String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
-           $('#tt').textContent=busy?TC.t:'Sẵn sàng';$('#tb').style.width=busy?(TC.n?Math.round(TC.d/TC.n*100):35)+'%':'0';
-           $('#tm').textContent=busy?`Tiến độ ${TC.d}/${TC.n||'?'} • ${mm} • hôm nay: vào ${cnt('j')} • đăng ${cnt('p')} • chia sẻ ${cnt('s')}`:`Hôm nay: vào ${cnt('j')} • đăng ${cnt('p')} • chia sẻ ${cnt('s')}`;
-           $('#chip').textContent=S.acc?(S.acc.ok?'● FB đã đăng nhập':'○ FB chưa đăng nhập')+(S.acc.n?' • '+S.acc.n:''):'○ FB chưa kiểm tra';$('#chip').className='tg '+(S.acc&&S.acc.ok?'ok':'')}
-          setInterval(TR,1000);TR();
+           tg(k,v){v?SEL.add(k):SEL.delete(k)},tt(k,v){v?TSEL.add(k):TSEL.delete(k)},tf(k,v){v?FSEL.add(k):FSEL.delete(k)},
+           setF(){S.set.f=$('#gF').value;S.set.s=$('#gS').value;S.set.skipOk=$('#gSkip').checked;shownN=150;sv();R.groups()},
+           selAll(v){gRows().forEach(r=>v?SEL.add(gk(r[1].url)):SEL.delete(gk(r[1].url)));if(!v)SEL.clear();R.groups()},
+           sync:()=>syncGroups(),scan:m=>scanGroups(m),find:()=>findGroups(),fJoin:()=>joinSelected(),fSel(){FR.forEach(g=>FSEL.add(gk(g.url)));R.find()},
+           stop(){if(!T.busy)return;T.stop=true;L('Đã yêu cầu dừng');toast('Đang dừng...')},
+           async toggleFb(){if(!T.busy)return toast('Chỉ dùng khi có tác vụ đang chạy');T.fb=!T.fb;await Br().setVisible({visible:T.fb});tick()},
+           addGroup(){const v=prompt('Nhập URL hoặc ID group:');if(!v)return;const url=cleanUrl(v);if(!url)return toast('Link không hợp lệ');const k=gk(url);if(S.groups.some(g=>gk(g.url)==k))return alert('Group này đã tồn tại trong danh sách.');
+            if(blockedKeys().has(k)){if(confirm('Group này đang nằm trong tab “Đã xóa”.\n\nKhôi phục lại vào danh sách?')){SEL.clear();TSEL=new Set([k]);A.restore(0)}return}
+            S.groups.push({url,name:'',members:'',scan_status:'Chưa quét',scanned_at:'',enabled:true});sv();R.groups()},
+           importTxt(){const f=$('#fileTxt');f.value='';f.onchange=async()=>{const file=f.files[0];if(!file)return;const txt=await file.text();let add=0,blk=0;const ex=new Set(S.groups.map(g=>gk(g.url))),bl=blockedKeys();
+             txt.split(/\r?\n/).forEach(l=>{l=l.trim();if(!l||l[0]=='#')return;const u=cleanUrl(l),k=gk(u);if(!u)return;if(bl.has(k)){blk++;return}if(!ex.has(k)){S.groups.push({url:u,name:'',members:'',scan_status:'Chưa quét',scanned_at:'',enabled:true});ex.add(k);add++}});sv();R.groups();alert('Đã thêm '+add+' group mới.'+(blk?'\nBỏ qua '+blk+' group trong tab “Đã xóa”.':''))};f.click()},
+           trash(keys,reason){const set=new Set(keys),bl=blockedKeys();let n=0;S.groups=S.groups.filter(g=>{const k=gk(g.url);if(!set.has(k))return true;if(k&&!bl.has(k)){S.trash.push(Object.assign({},g,{group_key:k,deleted_at:now(),delete_reason:reason}));bl.add(k);n++}return false});keys.forEach(k=>{SEL.delete(k);CSEL.delete(k)});sv();R.all();toast('Đã chuyển '+n+' nhóm vào “Đã xóa”')},
+           delSel(){if(!SEL.size)return alert('Hãy chọn ít nhất một nhóm.');if(confirm('Chuyển '+SEL.size+' nhóm vào tab “Đã xóa”?\n\n• Không hiện lại khi Đồng bộ / Import / Tìm nhóm.\n• Không rời nhóm trên Facebook.\n• Khôi phục được bất cứ lúc nào.'))A.trash([...SEL],'Xóa thủ công')},
+           delVisible(){const ks=gRows().map(r=>gk(r[1].url));if(!ks.length)return;if(confirm((ks.length==S.groups.length?'⚠ Bạn đang xóa TOÀN BỘ danh sách nhóm.\n\n':'')+'Chuyển '+ks.length+' nhóm đang lọc vào tab “Đã xóa”?'))A.trash(ks,'Xóa theo bộ lọc')},
+           restore(all){const set=new Set(all?S.trash.map(g=>gk(g.url)):[...TSEL]);if(!set.size)return toast('Chưa chọn nhóm');const ex=new Set(S.groups.map(g=>gk(g.url)));S.trash=S.trash.filter(g=>{const k=gk(g.url);if(!set.has(k))return true;if(!ex.has(k)){const r=Object.assign({},g);['group_key','deleted_at','delete_reason'].forEach(f=>delete r[f]);S.groups.push(r)}return false});TSEL.clear();sv();R.all();toast('Đã khôi phục')},
+           unblock(){if(!TSEL.size)return toast('Chưa chọn nhóm');if(!confirm('Bỏ chặn '+TSEL.size+' nhóm? Nhóm sẽ biến khỏi thùng rác và có thể xuất hiện lại khi Đồng bộ / Tìm nhóm.'))return;S.trash=S.trash.filter(g=>!TSEL.has(gk(g.url)));TSEL.clear();sv();R.all()},
+           fAdd(){const list=FR.filter(g=>FSEL.has(gk(g.url)));if(!list.length)return toast('Chọn ít nhất một nhóm');const ex=new Set(S.groups.map(g=>gk(g.url))),bl=blockedKeys();let add=0,b=0;list.forEach(g=>{const k=gk(g.url);if(bl.has(k)){b++;return}if(!ex.has(k)){S.groups.push(Object.assign({},g));ex.add(k);add++}});sv();R.all();alert('Đã thêm '+add+' nhóm.'+(b?'\nBỏ qua '+b+' nhóm trong tab “Đã xóa”.':''))},
+           campUi(){const sh=$('#cAct').value=='share';$('#cShareBox').style.display=sh?'block':'none';R.camp()},
+           campPick(){const c=campRead();const rows=S.groups.map((g,i)=>[g,mnum(g)]).sort((a,b)=>b[1]-a[1]);shB(`<h2>Chọn nhóm cho chiến dịch</h2><div class="grid3" style="margin:8px 0"><button class="g s" onclick="A.cpAll(1)">Chọn lọc đạt</button><button class="g s" onclick="A.cpAll(0)">Bỏ chọn</button><button class="s" onclick="A.close()">Xong</button></div><div id="cpL">${rows.map(([g])=>{const r=campReason(g,c);return'<label class="gi '+(r?'uv':'')+'"><input type="checkbox" '+(CSEL.has(gk(g.url))?'checked':'')+' onchange="A.cp(\''+gk(g.url).replace(/'/g,'')+'\',this.checked)"><div class="gb"><b>'+esc(g.name||g.url)+'</b><small>'+esc(g.members||'—')+' • '+esc(g.membership_status||'')+(r?' • loại: '+r:'')+'</small></div></label>'}).join('')}</div>`)},
+           cp(k,v){v?CSEL.add(k):CSEL.delete(k);R.camp()},cpAll(v){const c=campRead();CSEL.clear();if(v)S.groups.forEach(g=>{if(campReason(g,c)=='')CSEL.add(gk(g.url))});A.campPick();R.camp()},
+           campSave(upd){let n=S.camp;if(!upd||!n){n=prompt('Tên chiến dịch:');if(!n)return}const c=campRead();c.name=n;const i=S.camps.findIndex(x=>x.name==n);if(i>=0)S.camps[i]=c;else S.camps.push(c);S.camp=n;sv();R.camp();toast('Đã lưu chiến dịch')},
+           campLoad(){const n=$('#cLib').value;S.camp=n||null;const c=S.camps.find(x=>x.name==n);if(c)campWrite(c);else R.camp();sv()},
+           campDel(){if(!S.camp||!confirm('Xóa chiến dịch “'+S.camp+'”?'))return;S.camps=S.camps.filter(x=>x.name!=S.camp);S.camp=null;sv();R.camp()},
+           clearLedger(){const k=srcKey($('#cUrl').value);S.ledger=S.ledger.filter(x=>x.src!=k);sv();R.camp();toast('Đã xóa sổ bài này')},
+           campRun:()=>campRun(),verify:()=>verifyPosts(),engRefresh:()=>engRefresh(),
+           exportHist(){const rows=[['Thời gian','Loại','Tài khoản','Mục tiêu','Trạng thái','Chi tiết','Link']].concat(S.hist.map(h=>[h.time,h.kind,h.acc,h.target,h.status,h.detail,h.link]));const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
+            if(navigator.share){navigator.share({title:'Lịch sử Autu',text:csv}).catch(()=>{})}else if(navigator.clipboard){navigator.clipboard.writeText(csv);toast('Đã copy CSV')}},
+           async login(){if(T.busy)return toast('Đang chạy tác vụ khác');if(!Br())return alert('Thiếu plugin trình duyệt.');await Br().openWeb({url:'https://m.facebook.com/login',mode:'mobile',show:true});await Br().setBarTitle({title:'Đăng nhập Facebook — xong sẽ tự đóng'});toast('Đăng nhập trong cửa sổ Facebook');
+            const t0=Date.now();let stopReq=false;if(Br().addListener)Br().addListener('stopRequested',()=>stopReq=true);
+            while(Date.now()-t0<600000&&!stopReq){await W(2000);const s=await Br().session();if(s.loggedIn){await W(1500);S.acc={ok:true,uid:s.uid,t:Date.now()};sv();await Br().closeWeb();R.acc();tick();toast('Đăng nhập thành công ✓');return}}
+            try{await Br().closeWeb()}catch(e){}await A.chk()},
+           async chk(){if(!Br())return;const bad=await needLogin();R.acc();tick();toast(bad?'Chưa đăng nhập Facebook':'Đã đăng nhập ✓')},
+           async logout(){if(T.busy||!confirm('Xóa phiên đăng nhập Facebook trên app để đăng nhập tài khoản khác?'))return;await Br().clearSession();S.acc={ok:false,uid:''};sv();R.acc();tick();toast('Đã xóa phiên')},
+           saveSet(){S.set.bg=$('#sBg').checked;S.set.showFb=$('#sFb').checked;S.set.j1=+$('#sJ1').value||15;S.set.j2=Math.max(+$('#sJ2').value||30,S.set.j1);S.set.theme=$('#sTh').value;theme();sv()},
+           backup(){const v=JSON.stringify(S);if(navigator.clipboard){navigator.clipboard.writeText(v);toast('Đã copy bản sao lưu')}else prompt('Sao chép bản sao lưu:',v)},
+           restoreBk(){const v=prompt('Dán bản sao lưu JSON:');if(!v)return;try{const d=JSON.parse(v);if(!Array.isArray(d.groups))throw 0;S=Object.assign(S,d);sv();R.all();toast('Đã khôi phục dữ liệu')}catch(e){alert('Dữ liệu không hợp lệ')}},
+           close(){$('#sheet').classList.remove('on')}};
+          function shB(h){$('#shB').innerHTML=h;$('#sheet').classList.add('on')}
+          function theme(){const t=S.set.theme;document.documentElement.dataset.th=t=='auto'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):t}
+          /* ---------- điều hướng ---------- */
+          const ICON={groups:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M9 4v16"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',find:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>',camp:'<path d="M4 20l4-1 11-11-3-3L5 16z"/>',hist:'<path d="M3 12a9 9 0 109-9 9 9 0 00-7 3M3 4v5h5M12 8v5l3 2"/>',eng:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>'};
+          const TABS=[['groups','Nhóm FB'],['trash','Đã xóa'],['find','Tìm nhóm'],['camp','Chiến dịch'],['hist','Lịch sử'],['eng','Tương tác']];
+          $('#nav').innerHTML=TABS.map(t=>'<button id="nav-'+t[0]+'" onclick="P(\''+t[0]+'\')"><svg viewBox="0 0 24 24">'+ICON[t[0]]+'</svg><b style="font-weight:600">'+t[1]+'</b></button>').join('');
+          function P(k){document.querySelectorAll('.pg').forEach(e=>e.classList.toggle('on',e.id=='pg-'+k));TABS.forEach(t=>$('#nav-'+t[0]).classList.toggle('on',t[0]==k));$('#main').scrollTop=0;(R[k]||R.all)()}
+          /* ---------- khởi động ---------- */
+          (async function init(){let raw='';try{if(Br()){const r=await Br().load({key:KEY});raw=r&&r.value||''}}catch(e){}if(!raw)try{raw=localStorage.getItem(KEY)||''}catch(e){}
+           if(raw)try{const d=JSON.parse(raw);S=Object.assign(S,d);S.set=Object.assign({skipOk:true,bg:true,showFb:false,theme:'auto',j1:15,j2:30,f:'Tất cả',s:'Thành viên ↓'},d.set||{})}catch(e){}
+           $('#gF').value=S.set.f;$('#gS').value=S.set.s;$('#gSkip').checked=!!S.set.skipOk;theme();R.all();P('groups');
+           if(Br()&&Br().addListener)Br().addListener('stopRequested',()=>A.stop());
+           if(!Br())toast('Chưa tìm thấy plugin trình duyệt');else try{await needLogin();tick();R.acc()}catch(e){}})();
+          ['cAct','cUrl','cTx','cMode','cMin','cMax','cRj','cRs'].forEach(i=>document.addEventListener('input',e=>{if(e.target.id==i)R.camp()}));
           </script></body></html>
           AUTU_EOF
           sed -i '' "s/__BUILD__/${GITHUB_RUN_NUMBER}/" www/index.html
           grep -c "Đồng bộ nhóm của tôi" www/index.html
-      - run: npm install
+      - run: npm install --install-links
       - run: npx cap add ios
-      - name: Cho phep HTTP
+      - name: Cau hinh iOS (HTTP, chay nen, iOS 14)
         run: |
           P=ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity dict" $P
           /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" $P
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" $P
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" $P
+          sed -i '' "s/platform :ios, '13.0'/platform :ios, '14.0'/" ios/App/Podfile
+          sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g" ios/App/App.xcodeproj/project.pbxproj
+          grep -n "platform :ios" ios/App/Podfile
       - run: npx cap sync ios
+      - name: Kiem tra plugin da dang ky
+        run: |
+          cat ios/App/App/capacitor.config.json
+          grep -q "AutuBrowserPlugin" ios/App/App/capacitor.config.json || (echo "THIEU PLUGIN AutuBrowserPlugin trong packageClassList" && exit 1)
+          grep -q "AutuBrowser" ios/App/Podfile || (echo "THIEU pod AutuBrowser trong Podfile" && exit 1)
       - name: Build khong ky
         run: |
           cd ios/App
