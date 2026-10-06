@@ -1,0 +1,9 @@
+Thêm các khóa sau vào ios/App/App/Info.plist (sau khi chạy `npx cap add ios`) để iOS cho phép kết nối HTTP trong mạng nội bộ:
+
+<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsLocalNetworking</key><true/>
+  <key>NSAllowsArbitraryLoads</key><true/>
+</dict>
+<key>NSLocalNetworkUsageDescription</key>
+<string>Kết nối tới ứng dụng Autu trên máy tính của bạn trong cùng mạng Wi-Fi.</string>
