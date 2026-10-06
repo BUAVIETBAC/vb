@@ -1,0 +1,20 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Autu Pro</title>
+<style>
+ body{margin:0;background:#0B1220;color:#E6EDF7;font:16px -apple-system,sans-serif;display:flex;min-height:100vh;
+      align-items:center;justify-content:center;padding:24px;padding-top:env(safe-area-inset-top)}
+ .box{width:100%;max-width:420px;text-align:center}
+ h1{margin:0 0 6px}p{color:#8A9BB4;margin:0 0 18px}
+ input{width:100%;box-sizing:border-box;font-size:18px;padding:14px;border-radius:14px;border:1px solid #223049;background:#131C2E;color:#E6EDF7;text-align:center}
+ button{width:100%;margin-top:12px;padding:14px;border:0;border-radius:14px;background:#0068FF;color:#fff;font-size:17px;font-weight:600}
+</style></head><body><div class="box">
+<h1>Autu Pro</h1><p>Nhập địa chỉ máy tính (hiện trong app máy tính → Hệ thống → Điện thoại)</p>
+<input id="u" inputmode="url" autocapitalize="off" placeholder="http://192.168.1.10:8765">
+<button onclick="go()">Kết nối</button></div>
+<script>
+ const k='autu_url';const s=localStorage.getItem(k);
+ if(s){location.replace(s)} document.getElementById('u').value=s||'';
+ function go(){let v=document.getElementById('u').value.trim();if(!v)return;if(!/^https?:\/\//.test(v))v='http://'+v;
+  localStorage.setItem(k,v);location.replace(v)}
+</script></body></html>
