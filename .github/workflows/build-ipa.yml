@@ -74,7 +74,6 @@ jobs:
                   CAPPluginMethod(name: "state", returnType: CAPPluginReturnPromise),
                   CAPPluginMethod(name: "setVisible", returnType: CAPPluginReturnPromise),
                   CAPPluginMethod(name: "setBarTitle", returnType: CAPPluginReturnPromise),
-                  CAPPluginMethod(name: "setStopTitle", returnType: CAPPluginReturnPromise),
                   CAPPluginMethod(name: "session", returnType: CAPPluginReturnPromise),
                   CAPPluginMethod(name: "clearSession", returnType: CAPPluginReturnPromise),
                   CAPPluginMethod(name: "keepAlive", returnType: CAPPluginReturnPromise),
@@ -91,7 +90,6 @@ jobs:
               private var web: WKWebView?
               private var bar: UIView?
               private var titleLabel: UILabel?
-              private var stopBtn: UIButton?
               private var loading = false
               private var lastError = ""
               private var shown = false
@@ -129,12 +127,21 @@ jobs:
                   }
               }
 
-              private func ensureWeb(_ m: String) {
+              private func applyLight(_ on: Bool) {
+                  guard on, web != nil else { return }
+                  let rules = "[{\"trigger\":{\"url-filter\":\".*\",\"resource-type\":[\"media\"]},\"action\":{\"type\":\"block\"}}]"
+                  WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "autuLight", encodedContentRuleList: rules) { [weak self] list, _ in
+                      guard let list = list else { return }
+                      DispatchQueue.main.async { self?.web?.configuration.userContentController.add(list) }
+                  }
+              }
+
+              private func ensureWeb(_ m: String, light: Bool = false) {
                   if web == nil {
                       let cfg = WKWebViewConfiguration()
                       cfg.websiteDataStore = WKWebsiteDataStore.default()
                       cfg.allowsInlineMediaPlayback = true
-                      cfg.mediaTypesRequiringUserActionForPlayback = []
+                      cfg.mediaTypesRequiringUserActionForPlayback = light ? WKAudiovisualMediaTypes.all : WKAudiovisualMediaTypes([])
                       cfg.preferences.javaScriptCanOpenWindowsAutomatically = true
                       let w = WKWebView(frame: .zero, configuration: cfg)
                       w.navigationDelegate = self
@@ -183,7 +190,7 @@ jobs:
                           w.trailingAnchor.constraint(equalTo: container.trailingAnchor),
                           w.bottomAnchor.constraint(equalTo: container.bottomAnchor)
                       ])
-                      box = container; bar = b; titleLabel = t; stopBtn = stop
+                      box = container; bar = b; titleLabel = t
 
                       if let win = keyWindow() {
                           win.insertSubview(container, at: 0)
@@ -205,6 +212,7 @@ jobs:
                       }
                       shown = false
                   }
+                  applyLight(light)
                   applyMode(m)
               }
 
@@ -235,8 +243,9 @@ jobs:
                   let urlStr = call.getString("url") ?? "about:blank"
                   let m = call.getString("mode") ?? "desktop"
                   let show = call.getBool("show") ?? false
+                  let light = call.getBool("light") ?? false
                   DispatchQueue.main.async {
-                      self.ensureWeb(m)
+                      self.ensureWeb(m, light: light)
                       self.setShown(show)
                       if let u = URL(string: urlStr) { self.loading = true; self.web?.load(URLRequest(url: u)) }
                       call.resolve()
@@ -247,7 +256,7 @@ jobs:
                   DispatchQueue.main.async {
                       self.web?.stopLoading()
                       self.box?.removeFromSuperview()
-                      self.web = nil; self.box = nil; self.bar = nil; self.titleLabel = nil; self.stopBtn = nil
+                      self.web = nil; self.box = nil; self.bar = nil; self.titleLabel = nil
                       self.shown = false; self.loading = false
                       call.resolve()
                   }
@@ -308,11 +317,6 @@ jobs:
               @objc func setVisible(_ call: CAPPluginCall) {
                   let v = call.getBool("visible") ?? false
                   DispatchQueue.main.async { self.setShown(v); call.resolve() }
-              }
-
-              @objc func setStopTitle(_ call: CAPPluginCall) {
-                  let t = call.getString("title") ?? "Dừng"
-                  DispatchQueue.main.async { self.stopBtn?.setTitle(t, for: .normal); call.resolve() }
               }
 
               @objc func setBarTitle(_ call: CAPPluginCall) {
@@ -490,7 +494,7 @@ jobs:
           header{background:linear-gradient(135deg,#0A6CFF 0%,#2B45F5 55%,#6B3CF2 100%);box-shadow:0 6px 20px rgba(24,60,180,.35);position:relative;z-index:3}
           .logo{font-size:20px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;line-height:1.05}
           .logo small{display:block;font-size:10.5px;font-weight:700;letter-spacing:2.2px;opacity:.82;margin:3px 0 0 1px}
-          .acc{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);font-weight:700}
+          .acc{background:rgba(255,255,255,.2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.28);font-weight:700}
           .card{border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh);padding:12px}
           h2{font-weight:800;letter-spacing:-.2px}
           button{background:linear-gradient(135deg,#0A6CFF,#3358FF);box-shadow:0 3px 10px rgba(10,108,255,.28);border-radius:12px;font-weight:700;letter-spacing:.1px}
@@ -521,7 +525,7 @@ jobs:
           nav button.on{background:rgba(10,108,255,.12);color:var(--acc)}
           nav svg{width:23px;height:23px}
           #sheet>div{border-radius:24px 24px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.25)}
-          #toast{background:rgba(15,27,45,.92);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+          #toast{background:rgba(15,27,45,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
           details>summary{color:var(--acc);font-weight:700}
           ::-webkit-scrollbar{display:none}
           @media (min-width:760px){main{padding:14px 28px 18px}.pg{max-width:1000px;margin:0 auto}#dock{padding:8px 28px 6px}#dock>*{max-width:1000px;margin-left:auto;margin-right:auto}.tcb{padding:8px 28px 6px}#gList,#fList,#tList,#hList,#eList{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}#gList>button,#gList>div.card{grid-column:1/-1}.gi{margin:0}}
@@ -565,10 +569,10 @@ jobs:
           .chip{border-radius:99px;text-transform:uppercase;font-size:10.5px;letter-spacing:.35px}
           .kp{background:linear-gradient(180deg,var(--card),var(--chip))}.kp b{font-variant-numeric:tabular-nums;color:var(--acc)}
           h2{font-size:17px}h3{letter-spacing:.8px;font-size:11.5px}
-          header{}
-          nav{background:var(--card);}
+          header{backdrop-filter:saturate(160%) blur(10px);-webkit-backdrop-filter:saturate(160%) blur(10px)}
+          nav{background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
           nav button.on{box-shadow:inset 0 0 0 1px rgba(10,108,255,.25)}
-          #sheet{}#sheet>div::before{content:"";display:block;width:42px;height:4px;border-radius:9px;background:var(--line);margin:-4px auto 8px}
+          #sheet{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}#sheet>div::before{content:"";display:block;width:42px;height:4px;border-radius:9px;background:var(--line);margin:-4px auto 8px}
           input[type=text],input[type=number],input[type=search],textarea,select{font-size:15px}
           ::selection{background:rgba(10,108,255,.25)}
 
@@ -580,18 +584,18 @@ jobs:
           .sw.open>.gi{transform:translateX(-168px)}.sw.ask .swq{display:flex}.sw.ask .swx{display:none}
           .qb{display:flex;gap:6px;margin-top:6px}.qb button{width:auto;padding:7px 11px;font-size:12px}
           #gSeg button b{margin-left:4px;font-variant-numeric:tabular-nums}
-
-          /* ===== v4: sua mat tab khi chay, lich su PRO ===== */
-          html,body{position:fixed;inset:0;width:100%;overflow:hidden}
-          header,nav,#dock,.tcb{flex:none}main{min-height:0}nav{position:relative;z-index:8;background:var(--card)}header{position:relative;z-index:8}
-          #hK{flex-wrap:wrap}#hK .kp{flex:1 0 30%}
-          .dh{position:sticky;top:-8px;z-index:2;background:var(--bg);padding:7px 2px 5px;font-size:11.5px;font-weight:800;color:var(--mut);letter-spacing:.3px}
-          .gi.hok{border-left-color:#0E9F6E}.gi.hpend{border-left-color:#F59E0B}.gi.herr{border-left-color:#EF4444}.gi.hskip{opacity:.78}
-          #hStat button b,#hRange button b{margin-left:4px;font-variant-numeric:tabular-nums}
-          #hStat button,#hRange button{padding:9px 4px;font-size:12.5px}
-          #hList>.dh,#hList>button,#hList>.card,#hErr{grid-column:1/-1}
+          .dstrip{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:center;background:linear-gradient(135deg,#0556CC,#2B45F5);color:#fff;font-size:11.5px;font-weight:600;padding:0 14px 7px;line-height:1.4}.dstrip span{white-space:nowrap}.dstrip .tet{margin-left:auto;background:rgba(255,255,255,.18);border-radius:99px;padding:1px 9px}
+          body.busy *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:none!important;animation:none!important;box-shadow:none!important}
+          .chk{margin:6px 0}.ck{border-radius:12px;padding:9px 11px;font-size:13px;border:1px solid var(--line);background:var(--bg)}.ck b{display:block}.ck.ok{background:#E3F8EC;border-color:#0E9F6E;color:#0B6B4A}.ck.wt{background:#FFF6DD;border-color:#E0A800;color:#7A5A00}.ck.er{background:#FEE7E7;border-color:#E05252;color:#9B1C1C}.ck .cd{margin:4px 0;font-size:12.5px;opacity:.9}.ck .ca{margin-top:6px}
+          .hs{display:flex;align-items:center;gap:12px;margin-bottom:8px}.hs1{text-align:center;min-width:76px;background:linear-gradient(135deg,#0A6CFF,#6B3CF2);color:#fff;border-radius:16px;padding:8px 6px}.hs1 b{font-size:24px;display:block;line-height:1.1}.hs1 small{color:#fff;opacity:.85}.hs2{flex:1;min-width:0}.hsb{height:8px;background:var(--chip);border-radius:9px;overflow:hidden}.hsb i{display:block;height:100%;background:linear-gradient(90deg,#10B981,#0A6CFF);border-radius:9px}.hst{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:12px;margin-top:6px;color:var(--mut)}.hst b{color:var(--ink)}
+          #hS{display:flex;gap:4px;margin-bottom:8px;background:var(--chip);border-radius:13px;padding:3px}#hS button{flex:1;background:transparent;color:var(--mut);box-shadow:none;border-radius:10px;padding:7px 2px;font-size:12px}#hS button.on{background:var(--card);color:var(--acc);box-shadow:0 1px 5px rgba(16,40,90,.15)}
+          .hday{font-size:12px;font-weight:800;letter-spacing:.4px;color:var(--mut);text-transform:uppercase;margin:12px 4px 6px}
+          .hc{background:var(--card);border:1px solid var(--line);border-left:5px solid #C5D2E8;border-radius:16px;padding:10px 12px;margin-bottom:8px}.hc.ok{border-left-color:#0E9F6E}.hc.pe{border-left-color:#E0A800}.hc.er{border-left-color:#E05252}.hc.sk{border-left-color:#9AA7BD;opacity:.8}
+          .hh{display:flex;align-items:center;gap:9px}.hk{width:32px;height:32px;border-radius:10px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:16px;flex:none}.hc.ok .hk{background:#DDF6EA}.hc.er .hk{background:#FDE5E5}.hc.pe .hk{background:#FFF1CC}.ht{flex:1;min-width:0}.ht b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.ht small{color:var(--mut)}
+          .hd{margin-top:6px;font-size:12.5px;color:var(--mut)}.hx{margin-top:4px}.hx summary{font-size:11.5px;color:var(--mut);padding:2px 0}.hx div{font-size:11.5px;color:var(--mut);word-break:break-word;margin-top:3px}.ha{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.ha button{padding:6px 10px;font-size:12px}
           </style></head><body>
           <header><div class="logo">FACEBOOK AUTUPRO<small>LÊ HIẾU • 093579.1000</small></div><div class="sp"></div><button class="acc" id="chip" onclick="P('acc')">○ FB chưa kiểm tra</button></header>
+          <div class="dstrip" id="dstrip"><span id="dS"></span><span id="dL"></span><span id="dT" class="tet"></span></div>
           <div class="tcb" id="tcb" onclick="this.classList.toggle('x')"><div class="tcr"><b id="tcN">Không có tác vụ đang chạy</b><span class="pc" id="tcP">0%</span><button class="g s" onclick="event.stopPropagation();A.toggleFb()" id="bFb">Hiện FB</button><button class="r s" onclick="event.stopPropagation();A.stop()">■ Dừng</button></div><div class="bar"><i id="tcB"></i></div><div class="tcd"><small id="tcT">TASK CENTER</small><br><small id="tcS"></small><br><small id="tcR"></small></div></div>
           <main id="main">
 
@@ -623,7 +627,7 @@ jobs:
           <select id="cAct" style="display:none"><option value="post">Đăng bài mới</option><option value="share">Chia sẻ bài có sẵn</option></select>
           <div class="rc"><span class="rcl">↺</span><select id="cRecent" onchange="A.recentLoad()"></select><button class="g s fx" onclick="A.recentLoad(1)">Gần nhất</button></div><small id="cRecentInfo" class="rci"></small>
           <div class="card sec"><div class="sh"><i class="num">1</i><div><h2>Nội dung</h2><small>Spintax {Xin chào|Chào cả nhà} • nhiều mẫu: ngăn bằng dòng ---</small></div></div>
-          <div id="cShareBox"><input type="text" id="cUrl" placeholder="Dán link bài Facebook cần chia sẻ"><button class="g s" style="width:100%;margin:2px 0 6px" onclick="A.viewPost($('#cUrl').value.trim(),event)">👁 Xem bài gốc (kiểm tra link nguồn)</button><select id="cMeth"><option value="link">Chia sẻ bằng link vào nhóm (như app PC)</option><option value="native">Nút Chia sẻ của Facebook (thử nghiệm)</option></select><label class="k"><input type="checkbox" id="cHide" checked> Ẩn link trong bài (giữ khung xem trước)</label></div>
+          <div id="cShareBox"><div class="row"><input type="text" id="cUrl" placeholder="Dán link bài Facebook cần chia sẻ" oninput="showChk()"><button class="g s fx" onclick="A.chkLink()">✔ Kiểm tra</button></div><div id="cChk" class="chk"></div><select id="cMeth"><option value="link">Chia sẻ bằng link vào nhóm (như app PC)</option><option value="native">Nút Chia sẻ của Facebook (thử nghiệm)</option></select><label class="k"><input type="checkbox" id="cHide" checked> Ẩn link trong bài (giữ khung xem trước)</label></div>
           <textarea id="cTx" placeholder="Viết nội dung bài / caption tại đây..."></textarea><div class="tl"><small id="cLen">0 ký tự</small></div></div>
           <div class="card sec"><div class="sh"><i class="num">2</i><div><h2>Nhóm đăng</h2><small>Nhóm nhiều thành viên chạy trước</small></div><b class="fx" id="cCnt">0 nhóm</b></div>
           <button class="g pickb" onclick="A.campPick()">☰ Chọn nhóm thủ công…</button>
@@ -631,18 +635,15 @@ jobs:
           <div class="grid2"><div><small>TV tối thiểu</small><input type="number" id="cMin" value="0"></div><div><small>TV tối đa (0 = không giới hạn)</small><input type="number" id="cMax" value="0"></div></div>
           <label class="k"><input type="checkbox" id="cRj" checked> Chỉ nhóm đã xác minh tham gia</label><label class="k"><input type="checkbox" id="cRs"> Chỉ nhóm đã quét OK</label><small id="cDiag"></small></div>
           <details class="card sec"><summary>⚙ Nhịp chạy &amp; chiến dịch đã lưu</summary><select id="cLib" onchange="A.campLoad()"></select><div class="grid3"><button class="s" onclick="A.campSave(0)">Lưu mới</button><button class="g s" onclick="A.campSave(1)">Cập nhật</button><button class="g s" onclick="A.campDel()">Xóa</button></div>
-          <div class="grid3" style="margin-top:6px"><div><small>Nghỉ min (s)</small><input type="number" id="cD1" value="60"></div><div><small>Nghỉ max (s)</small><input type="number" id="cD2" value="120"></div><div><small>Chờ đăng (s)</small><input type="number" id="cW" value="6"></div></div></details>
-          <div class="card sec"><div class="row"><h3 style="margin:0">Hàng đợi</h3><b class="fx" id="qSum" style="font-size:12px;color:var(--acc)"></b></div><div class="grid3" style="margin:8px 0"><button class="g s" onclick="A.retry()">↻ Chạy lại lỗi</button><button class="g s" onclick="A.chkAll()">✔ Kiểm tra link</button><button class="g s" onclick="A.viewLast()">👁 Bài gần nhất</button></div><div id="cQ"><small>Chưa có hàng đợi.</small></div></div>
+          <div class="grid3" style="margin-top:6px"><div><small>Nghỉ min (s)</small><input type="number" id="cD1" value="60"></div><div><small>Nghỉ max (s)</small><input type="number" id="cD2" value="120"></div><div><small>Chờ đăng (s)</small><input type="number" id="cW" value="6"></div></div><label class="k"><input type="checkbox" id="cLite" onchange="S.set.light=this.checked;sv()"> Chế độ nhẹ (tắt video tự phát, bớt hiệu ứng khi chạy)</label></details>
+          <div class="card sec"><div class="row"><h3 style="margin:0">Hàng đợi</h3><button class="g s fx" onclick="A.retry()">↻ Chạy lại nhóm lỗi</button></div><div id="cQ"><small>Chưa có hàng đợi.</small></div></div>
           </section>
 
-          <section class="pg" id="pg-hist"><div class="card slim"><div class="kpis" id="hK"></div>
-          <div class="seg" id="hRange"><button data-r="1" onclick="A.hset('hr',1)">Hôm nay</button><button data-r="7" onclick="A.hset('hr',7)">7 ngày</button><button data-r="30" onclick="A.hset('hr',30)">30 ngày</button><button data-r="0" onclick="A.hset('hr',0)">Tất cả</button></div>
-          <div class="seg" id="hStat"><button data-s="all" onclick="A.hset('hs','all')">Tất cả<b></b></button><button data-s="ok" onclick="A.hset('hs','ok')">Thành công<b></b></button><button data-s="pend" onclick="A.hset('hs','pend')">Chờ duyệt<b></b></button><button data-s="err" onclick="A.hset('hs','err')">Lỗi<b></b></button></div>
-          <input type="search" id="hQ" class="srch" style="margin-top:0" placeholder="Tìm nhóm, trạng thái, link..." oninput="RT('hist',250)">
-          <details><summary>Bộ lọc &amp; công cụ ▾</summary>
-          <div class="grid2"><select id="hKind" onchange="histN=60;R.hist()"><option>Tất cả</option><option>Tác vụ</option><option>Chiến dịch</option><option>Đăng bài</option><option>Chia sẻ</option></select><select id="hSort" onchange="histN=60;R.hist()"><option>Mới nhất</option><option>Cũ nhất</option><option>Lỗi trước</option><option>Nhóm A→Z</option></select></div>
-          <div class="grid2" style="margin-top:6px"><button class="g s" onclick="A.verify()">✔ Xác minh bài + lấy link</button><button class="g s" onclick="A.hChkVis()">✔ Kiểm tra link đang lọc</button><button class="g s" onclick="A.hCopy()">⧉ Copy link bài OK</button><button class="g s" onclick="A.exportHist()">⇩ Xuất CSV</button><button class="g s" onclick="A.hClean()">Dọn &gt; 30 ngày</button><button class="r s" onclick="A.hClear()">Xóa tất cả</button></div></details></div>
-          <div id="hErr"></div><div id="hList"></div></section>
+          <section class="pg" id="pg-hist"><div class="card slim"><div id="hK"></div>
+          <div class="seg" id="hS"></div>
+          <div class="grid2"><select id="hKind" onchange="R.hist()"><option>Tất cả</option><option>Tác vụ</option><option>Chiến dịch</option><option>Đăng bài</option><option>Chia sẻ</option></select><select id="hP" onchange="R.hist()"><option value="1">Hôm nay</option><option value="7" selected>7 ngày</option><option value="30">30 ngày</option><option value="0">Tất cả</option></select></div>
+          <input type="search" id="hQ" placeholder="Tìm nhóm, trạng thái, lỗi..." oninput="RT('hist',250)" style="margin-top:6px">
+          <div class="grid3" style="margin-top:6px"><button class="g s" onclick="A.verify()">✔ Lấy link bài</button><button class="g s" onclick="A.hretry()">↻ Thử lại nhóm lỗi</button><button class="g s" onclick="A.exportHist()">⇩ CSV</button></div></div><div id="hList"></div></section>
 
           <section class="pg" id="pg-eng"><div class="card slim"><div class="kpis" id="eK"></div>
           <div class="grid2"><select id="eP" onchange="R.eng()"><option value="7">7 ngày</option><option value="30">30 ngày</option><option value="0">Tất cả</option></select><select id="eS" onchange="R.eng()"><option>Điểm HQ cao</option><option>Tương tác cao</option><option>Mới nhất</option></select></div>
@@ -756,7 +757,7 @@ jobs:
           if(!await A.fill(ed,o.text))return{r:'KHÔNG NHẬP ĐƯỢC NỘI DUNG',d:'khung gõ không nhận chữ'};
           await A.sl(1500+(o.prev||0)*1000);dg=A.dlg()||dg;ed=A.editor(dg)||ed;
           let hid='';
-          if(o.hide&&o.hurl){let ready=hasPv();for(let i=0;i<50&&!ready;i++){await A.sl(400);dg=A.dlg()||dg;ready=hasPv()}
+          if(o.hide&&o.hurl){let ready=hasPv();for(let i=0;i<34&&!ready;i++){await A.sl(600);dg=A.dlg()||dg;ready=hasPv()}
           if(!ready){hid='giữ link (Facebook chưa hiện khung xem trước)'}else{await A.sl(700);let done=false;const lg=[];
           for(const m of[0,1,2]){dg=A.dlg()||dg;ed=A.editor(dg)||ed;
           const okd=await A.delUrl(ed,o.hurl,m);
@@ -825,27 +826,38 @@ jobs:
           return{likes,comments,shares,ok:b.length>300,d:b.slice(0,120).replace(/\s+/g,' ')}}
           /* ---------- điều khiển trình duyệt nhúng ---------- */
           const stopped=()=>T.stop;
+          async function pg_check(A){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(1800);
+          const meta=q=>{const e=document.querySelector(q);return e?(e.getAttribute('content')||''):''};
+          const body=(document.body?document.body.innerText:'').slice(0,6000);const art=document.querySelector('[role=article]');
+          const gone=/(nội dung này hiện không hiển thị|bạn hiện không xem được nội dung này|this content isn.t available|this content is no longer available|liên kết bạn đã theo có thể bị hỏng|the link you followed may be broken|trang này không hiển thị)/i.test(body)&&!art;
+          const login=!!document.querySelector('input[name=pass],form[action*="login"]');
+          const strip=t=>String(t||'').replace(/\s*\|\s*Facebook\s*$/i,'').trim();
+          let author='';const h=document.querySelector('[role=article] h2 a,[role=article] h3 a,h2 a,h3 a,strong a');if(h)author=(h.innerText||'').trim();
+          const title=strip(meta('meta[property="og:title"]')||document.title);if(!author)author=title;
+          const desc=(meta('meta[property="og:description"]')||(art?art.innerText:'')||'').replace(/\s+/g,' ').trim().slice(0,160);
+          const hasShare=!!A.find(/^(Chia sẻ|Share|Gửi nội dung này cho bạn bè hoặc đăng lên trang cá nhân của bạn\.?|Send this to friends or post it on your profile\.?)$/i);
+          return{href:location.href,gone,login,title,author,desc,hasArticle:!!art,hasShare}}
           async function sl(ms){const end=Date.now()+ms;while(Date.now()<end&&!T.stop)await W(Math.min(250,end-Date.now()));}
           async function waitLoad(max=45000){await W(250);const end=Date.now()+max;while(Date.now()<end&&!T.stop){const s=await Br().state();if(!s.loading)return s;await W(400)}return await Br().state()}
           async function nav(url,settle=1600,mode){await Br().gotoUrl({url,mode});await waitLoad();await sl(settle)}
           async function run(fn,arg,timeout=90){const code=HELP+'return await ('+fn.toString()+')(A,'+JSON.stringify(arg===undefined?null:arg)+');';const r=await Br().exec({code,timeout});if(r.error)throw new Error(r.error);return r.value===''?null:JSON.parse(r.value)}
           async function needLogin(){const s=await Br().session();S.acc=Object.assign(S.acc||{},{ok:!!s.loggedIn,uid:s.uid||'',t:Date.now()});sv();return !s.loggedIn}
           /* ---------- Task Center ---------- */
-          async function task(name,fn,opt={}){if(T.busy){toast('Đang chạy tác vụ khác');return false}if(VIEW){VIEW=false;try{await Br().closeWeb()}catch(e){}}
+          async function task(name,fn,opt={}){if(T.busy){toast('Đang chạy tác vụ khác');return false}
            if(!Br()){alert('Thiếu plugin trình duyệt AutuBrowser trong bản build này.');return false}
            Object.assign(T,{busy:true,stop:false,name,done:0,total:opt.total||0,t0:Date.now(),msg:'Đang khởi động...',fb:false});tick();let ok=true;
            try{if(await needLogin())throw new Error('Chưa đăng nhập Facebook — vào Tài khoản → Đăng nhập.');
-            await Br().keepAlive({on:!!S.set.bg});await Br().openWeb({url:'about:blank',mode:'desktop',show:!!S.set.showFb});T.fb=!!S.set.showFb;
+            await Br().keepAlive({on:!!S.set.bg});await Br().openWeb({url:'about:blank',mode:'desktop',show:!!S.set.showFb,light:S.set.light!==false});T.fb=!!S.set.showFb;
             await fn()}catch(e){ok=false;L('Lỗi: '+(e.message||e));lastRes='Lỗi: '+(e.message||e)}
            finally{try{await Br().closeWeb()}catch(e){}try{await Br().keepAlive({on:false})}catch(e){}prog(lastRes||T.msg,null,null,true);T.busy=false;T.fb=false;L('Hoàn tất: '+name);sv();R.all();tick()}return ok}
           const _c={};const setT=(id,v)=>{if(_c[id]!==v){_c[id]=v;const e=$('#'+id);if(e)e.textContent=v}};
           const _rt={};function RT(k,ms){if(_rt[k])return;_rt[k]=setTimeout(()=>{_rt[k]=0;const pg=$('#pg-'+k);if(pg&&!pg.classList.contains('on'))return;R[k]()},ms||600)}
-          function tick(){const b=T.busy;$('#tcb').style.display=b?'block':'none';
+          function tick(){const b=T.busy;$('#tcb').style.display=b?'block':'none';document.body.classList.toggle('busy',b);
           if(b){const pct=T.total?Math.round(T.done/T.total*100):8,e=Math.floor((Date.now()-T.t0)/1000),mm=String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
           setT('tcT','TASK CENTER • ĐANG CHẠY');setT('tcN',T.name+(T.msg?' — '+T.msg:''));$('#tcB').style.width=pct+'%';setT('tcP',pct+'%');
           setT('tcS','Trạng thái: đang chạy • Tiến độ '+pct+'% • Thời gian '+mm);setT('tcR','Kết quả gần nhất: '+(lastRes||'chưa có kết quả'));setT('bFb',T.fb?'Ẩn FB':'Hiện FB')}
           const a=S.acc;setT('chip',a?(a.ok?'● FB đã đăng nhập':'○ FB chưa đăng nhập'):'○ FB chưa kiểm tra')}
-          setInterval(()=>{if(T.busy&&!document.hidden)tick()},1000);
+          setInterval(()=>{if(T.busy&&!document.hidden)tick()},2000);
           let _pg=0;function prog(msg,done,total,force){T.msg=msg;if(done!=null)T.done=done;if(total!=null)T.total=total;const n=Date.now();if(!force&&n-_pg<250)return;_pg=n;setT('gProg',msg);setT('gCnt',(T.done||0)+'/'+(T.total||0));$('#gBar').style.width=(T.total?Math.round(T.done/T.total*100):T.busy?8:0)+'%';tick()}
           /* ---------- đọc chi tiết nhóm (port _group_detail) ---------- */
           function parseDetail(d,url){const body=d.body||'',bl=body.toLowerCase();
@@ -927,22 +939,22 @@ jobs:
           const srcKey=u=>{const m=String(u).match(/(?:posts|permalink|videos|reel|watch|share\/[pvr])\/?([\w.\-]+)|[?&](?:story_fbid|v|fbid)=(\d+)/i);return(m?(m[1]||m[2]):String(u)).toLowerCase()};
           function rememberCamp(c){if(!c.url&&!String(c.text||'').trim())return;const e={act:c.act,url:c.url,text:c.text,meth:c.meth,t:Date.now(),time:now()};S.last=e;S.recent=(S.recent||[]).filter(x=>!(x.act==e.act&&x.url==e.url&&x.text==e.text));S.recent.unshift(e);S.recent=S.recent.slice(0,15);sv();R.recent()}
           function postedKeys(c){const s=new Set();if(c.act!='share')return s;const k=srcKey(c.url);if(!k)return s;for(const h of S.hist){if(h.kind=='Chia sẻ'&&h.gurl&&h.src&&(sOK(h.status)||sPend(h.status))&&srcKey(h.src)==k)s.add(gk(h.gurl))}return s}
-          function campRun(){const c=campRead(),share=c.act=='share';if(share&&!/(facebook\.com|fb\.watch|fb\.com)/i.test(c.url))return alert('Hãy dán link bài viết Facebook cần chia sẻ.');if(!share&&!c.text.trim())return alert('Nội dung bài đăng đang trống.');
+          function campRun(){const c=campRead(),share=c.act=='share';if(share){const inf=shareInfo(c.url);if(!inf.ok)return alert('Link bài gốc chưa đúng: '+inf.why+'.\nHãy dán link một bài viết cụ thể (bấm Chia sẻ → Sao chép liên kết) rồi bấm “Kiểm tra”.');if(inf.clean!==c.url){c.url=inf.clean;$('#cUrl').value=inf.clean}}if(!share&&!c.text.trim())return alert('Nội dung bài đăng đang trống.');
            let gs=campGroups(c);if(!gs.length){const d=campDiag(c);return alert('Không có group nào vượt qua bộ lọc.\n\nChưa xác minh tham gia: '+d.not_joined+'\nChưa quét OK: '+d.not_scanned+'\nChưa xác minh số TV: '+d.count_unverified+'\nDưới ngưỡng: '+d.under_min+'\nTrên ngưỡng: '+d.over_max)}
            let skippedDup=0;
            if(!confirm((share?'Chia sẻ':'Đăng bài')+' vào '+gs.length+' nhóm'+(skippedDup?' (bỏ qua '+skippedDup+' nhóm đã chia sẻ)':'')+'?\nNhóm nhiều thành viên chạy trước. Nghỉ '+c.d1+'-'+c.d2+'s/nhóm.'))return;
-           rememberCamp(c);QUEUE=gs.map(g=>({g:gk(g.url),name:g.name,st:'CHỜ',note:'',act:c.act}));R.queue();const name=(share?'Chia sẻ ':'Đăng bài ')+gs.length+' nhóm';
+           rememberCamp(c);QUEUE=gs.map(g=>({g:gk(g.url),name:g.name,st:'CHỜ',note:''}));R.queue();const name=(share?'Chia sẻ ':'Đăng bài ')+gs.length+' nhóm';
            return task(name,async()=>{let ok=0,bad=0;const stat={};
-            for(let i=0;i<gs.length&&!T.stop;i++){const g=gs[i],q=QUEUE[i];q.st='ĐANG CHẠY';LASTCAP='';R.queue();prog(g.name,i,gs.length);let r='LỖI',link='',err='',dbg='';
+            for(let i=0;i<gs.length&&!T.stop;i++){const g=gs[i],q=QUEUE[i];q.st='ĐANG CHẠY';R.queue();prog(g.name,i,gs.length);let r='LỖI',link='',err='',dbg='';
              const why=campReason(g,c);if(why){r='SKIPPED_FILTER';err='BỘ LỌC: '+why}else{
-              try{const t0=Date.now();let o;const linkPost=async()=>{const cap=pickContent(c.text);LASTCAP=cap;await nav(g.url,2200);return await run(pg_post,{text:share?((cap?cap+'\n\n':'')+c.url):cap,pk:cap,wait:c.wait,prev:share&&c.hide===false?6:0,hide:share&&c.hide!==false,hurl:share?c.url:''},160)};
+              try{const t0=Date.now();let o;const linkPost=async()=>{const cap=pickContent(c.text);await nav(g.url,2200);return await run(pg_post,{text:share?((cap?cap+'\n\n':'')+c.url):cap,pk:cap,wait:c.wait,prev:share&&c.hide===false?6:0,hide:share&&c.hide!==false,hurl:share?c.url:''},160)};
           if(share&&c.meth=='native'){await nav(c.url,3000);o=await run(pg_share,{name:g.name,caption:pickContent(c.text)},120);if(!/^(OK|CHỜ DUYỆT|BỊ CHẶN)$/.test(o.r)){L('Nút Chia sẻ lỗi ('+o.r+') → thử chia sẻ bằng link');const o2=await linkPost();o2.d='[nút Chia sẻ: '+o.r+'] '+(o2.d||'');o=o2}}else{o=await linkPost()}
           r=o.r;dbg=o.d||'';link=o.link||''
                if(r=='OK'||r=='CHỜ DUYỆT'||r=='CHƯA XÁC NHẬN'){ok++;if(r!='OK')err=r+(dbg?' • '+dbg:'')}else{bad++;err=r+(dbg?' • '+dbg:'')}}catch(e){bad++;err=e.message;r='LỖI'}}
              q.st=r=='OK'?'THÀNH CÔNG':r=='CHỜ DUYỆT'?'CHỜ DUYỆT':r=='CHƯA XÁC NHẬN'?'CHƯA XÁC NHẬN':r=='SKIPPED_FILTER'?'BỎ QUA':'LỖI';q.note=err;q.link=link||'';q.gurl=g.url;R.queue();L((share?'Chia sẻ':'Đăng')+': '+g.name+' → '+r);
-             H(share?'Chia sẻ':'Đăng bài','',g.name,r,err||dbg||'',link,g.url,share?c.url:'');{const h0=S.hist[0];if(h0){h0.sig=String(LASTCAP||'').replace(/\s+/g,' ').trim().slice(0,80);h0.txt=String(LASTCAP||'').slice(0,1500);h0.act=c.act;h0.toks=share?srcTok(c.url):[];q.sig=h0.sig;q.toks=h0.toks}}prog(g.name+' → '+r,i+1,gs.length,true);sv();RT('groups');
+             H(share?'Chia sẻ':'Đăng bài','',g.name,r,err||dbg||'',link,g.url,share?c.url:'');prog(g.name+' → '+r,i+1,gs.length,true);sv();RT('groups');
              if(r=='BỊ CHẶN'){L('Facebook chặn tính năng — DỪNG, nghỉ vài giờ');T.stop=true;break}
-             if(i<gs.length-1&&!T.stop&&r!='SKIPPED_FILTER'){const s=Math.round(c.d1+Math.random()*Math.max(0,c.d2-c.d1));for(let k=s;k>0&&!T.stop;k--){if(k%3==0){prog('Nghỉ '+k+'s trước nhóm kế tiếp',null,null);await Br().setBarTitle({title:'Nghỉ '+k+'s'})}await W(1000)}}}
+             if(i<gs.length-1&&!T.stop&&r!='SKIPPED_FILTER'){try{await Br().gotoUrl({url:'about:blank'})}catch(e){}const s=Math.round(c.d1+Math.random()*Math.max(0,c.d2-c.d1));for(let k=s;k>0&&!T.stop;k--){if(k%5==0){prog('Nghỉ '+k+'s trước nhóm kế tiếp',null,null);await Br().setBarTitle({title:'Nghỉ '+k+'s'})}await W(1000)}}}
             lastRes=name+' • thành công '+ok+' • lỗi '+bad+(T.stop?' • đã dừng':'')},{total:gs.length})}
           function campDiag(c){const d={not_joined:0,not_scanned:0,count_unverified:0,under_min:0,over_max:0};(c.mode=='Theo thành viên'?S.groups:S.groups.filter(g=>c.sel.includes(gk(g.url)))).forEach(g=>{const r=campReason(g,c);if(r)d[r]++});return d}
           /* ---------- lịch sử / tương tác ---------- */
@@ -978,10 +990,24 @@ jobs:
             $('#cLib').innerHTML='<option value="">— Chiến dịch mới —</option>'+S.camps.map(x=>'<option>'+esc(x.name)+'</option>').join('');$('#cLib').value=S.camp||'';},
            recent(){const el=$('#cRecent');if(!el)return;const r=S.recent||[];el.innerHTML='<option value="">— Bài / link đã dùng gần đây ('+r.length+') —</option>'+r.map((x,i)=>'<option value="'+i+'">'+esc(x.time.slice(5,16)+' • '+(x.act=='share'?'Chia sẻ: '+x.url:'Đăng: '+String(x.text||'').replace(/\s+/g,' ').slice(0,40)))+'</option>').join('');$('#cRecentInfo').textContent=S.last?('Gần nhất: '+S.last.time+' • '+(S.last.act=='share'?'chia sẻ ':'đăng bài ')+(S.last.url||'')):'Chưa có bài nào được lưu'},
           queue(){$('#cQ').innerHTML=QUEUE.length?QUEUE.map((q,i)=>'<div class="gi"><div class="gb"><b>'+(i+1)+'. '+esc(q.name)+'</b><div class="chips">'+chip(q.st,q.st=='THÀNH CÔNG'?'ok':q.st=='LỖI'?'er':q.st=='ĐANG CHẠY'?'bl':(q.st=='CHỜ DUYỆT'||q.st=='CHƯA XÁC NHẬN')?'wt':'')+'</div>'+(q.note?'<span class="note">'+esc(q.note)+'</span>':'')+((q.link||q.gurl)?'<div class="qb">'+(q.link?'<button class="s jb" data-u="'+esc(q.link)+'" onclick="A.openPost(this.dataset.u,event)">↗ Mở bài đăng</button>':'')+(q.gurl?'<button class="g s" data-u="'+esc(q.gurl)+'" onclick="A.openG(this.dataset.u,event)">↗ Mở nhóm'+(q.link?'':' để kiểm tra')+'</button>':'')+'</div>':'')+'</div></div>').join(''):'<small>Chưa có hàng đợi.</small>'},
-           hist(){const k=$('#hKind').value,q=($('#hQ').value||'').toLowerCase();let rows=S.hist.filter(h=>(k=='Tất cả'||(k=='Chiến dịch'?/Đăng|Chia/.test(h.kind):h.kind==k))&&(!q||(h.target+' '+h.status+' '+h.detail+' '+h.kind).toLowerCase().includes(q)));
-            const ok=rows.filter(h=>sOK(h.status)).length,pe=rows.filter(h=>sPend(h.status)||(h.kind=='Đăng bài'&&sOK(h.status)&&!h.link)).length,er=rows.filter(h=>!sOK(h.status)&&!sPend(h.status)&&!/SKIPPED/.test(h.status)).length;
-            $('#hK').innerHTML=[['Tổng',rows.length],['Thành công',ok],['Chờ duyệt / chưa link',pe],['Lỗi',er]].map(a=>'<div class="kp">'+a[0]+'<b>'+a[1]+'</b></div>').join('');
-            $('#hList').innerHTML=rows.slice(0,200).map(h=>'<div class="gi"><div class="gb"><b'+(h.gurl?' class="lk" data-u="'+esc(h.gurl)+'" onclick="A.openG(this.dataset.u,event)"':'')+'>'+esc(h.target)+(h.gurl?' ↗':'')+'</b><small>'+esc(h.time)+' • '+esc(h.kind)+'</small><div class="chips">'+chip(h.status,sOK(h.status)?'ok':sPend(h.status)?'wt':/SKIPPED/.test(h.status)?'':'er')+(h.link?chip('CÓ LINK','bl'):'')+'</div>'+(h.detail?'<span class="note">'+esc(h.detail)+'</span>':'')+(h.src?'<span class="note">Link chia sẻ gốc: '+esc(h.src)+'</span>':'')+(h.link?'<span class="note" onclick="Br().openExternal({url:\''+esc(h.link)+'\'})" style="color:var(--acc)">↗ Link bài đăng: '+esc(h.link)+'</span>':'')+'</div></div>').join('')||'<div class="card"><small>Chưa có lịch sử.</small></div>'},
+           hist(){const k=$('#hKind').value,q=($('#hQ').value||'').toLowerCase().trim(),per=+($('#hP').value||0),today=now().slice(0,10);
+          const cut=per==1?Date.parse(today+'T00:00:00'):per?Date.now()-per*864e5:0;
+          const cls=h=>sOK(h.status)?'ok':sPend(h.status)?'pe':/SKIPPED/.test(h.status)?'sk':'er';
+          const all=S.hist.filter(h=>(k=='Tất cả'||(k=='Chiến dịch'?/Đăng|Chia/.test(h.kind):h.kind==k))&&(!cut||Date.parse(String(h.time).replace(' ','T'))>=cut)&&(!q||(h.target+' '+h.status+' '+h.detail+' '+h.kind+' '+(h.src||'')).toLowerCase().includes(q)));
+          const n={ok:0,pe:0,er:0,sk:0};all.forEach(h=>n[cls(h)]++);const dn=all.length-n.sk,rate=dn?Math.round(n.ok/dn*100):0;
+          const td=S.hist.filter(h=>String(h.time).slice(0,10)==today),tp=td.filter(h=>h.kind=='Đăng bài'&&sOK(h.status)).length,ts=td.filter(h=>h.kind=='Chia sẻ'&&sOK(h.status)).length,tg=Object.keys(todayMap()).length;
+          $('#hK').innerHTML='<div class="hs"><div class="hs1"><b>'+rate+'%</b><small>thành công</small></div><div class="hs2"><div class="hsb"><i style="width:'+rate+'%"></i></div><div class="hst"><span>✎ <b>'+tp+'</b> đăng</span><span>↪ <b>'+ts+'</b> chia sẻ</span><span>👥 <b>'+tg+'</b> nhóm hôm nay</span></div></div></div>';
+          $('#hS').innerHTML=[['all','Tất cả',all.length],['ok','Thành công',n.ok],['pe','Chờ duyệt',n.pe],['er','Lỗi',n.er]].map(a=>'<button class="'+(HF==a[0]?'on':'')+'" onclick="A.hf(\''+a[0]+'\')">'+a[1]+' <b>'+a[2]+'</b></button>').join('');
+          const rows=all.filter(h=>HF=='all'||cls(h)==HF),yd=new Date(Date.now()-864e5),ydS=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+          let last='',html='';
+          for(const h of rows.slice(0,150)){const d=String(h.time).slice(0,10);if(d!=last){last=d;html+='<div class="hday">'+(d==today?'Hôm nay':d==ydS?'Hôm qua':d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4))+'</div>'}
+          const c=cls(h),ic=h.kind=='Chia sẻ'?'↪':h.kind=='Đăng bài'?'✎':'⚙',det=String(h.detail||''),sh=det.split(' • ')[0];
+          const btn=(u,t)=>'<button class="g s" data-u="'+esc(u)+'" onclick="A.openU(this.dataset.u)">'+t+'</button>';
+          html+='<div class="hc '+c+'"><div class="hh"><i class="hk">'+ic+'</i><div class="ht"><b>'+esc(h.target)+'</b><small>'+esc(String(h.time).slice(11,16))+' • '+esc(h.kind)+'</small></div>'+chip(h.status,c=='ok'?'ok':c=='pe'?'wt':c=='sk'?'':'er')+'</div>'
+          +(sh?'<div class="hd">'+esc(sh.length>90?sh.slice(0,90)+'…':sh)+'</div>':'')
+          +(det.length>sh.length?'<details class="hx"><summary>Chi tiết kỹ thuật</summary><div>'+esc(det)+'</div></details>':'')
+          +((h.link||h.src||h.gurl)?'<div class="ha">'+(h.link?btn(h.link,'↗ Bài đã đăng')+'<button class="g s" data-u="'+esc(h.link)+'" onclick="A.copy(this.dataset.u)">⧉ Sao chép</button>':'')+(h.src?btn(h.src,'↗ Bài gốc'):'')+(h.gurl?btn(h.gurl,'👥 Nhóm'):'')+'</div>':'')+'</div>'}
+          $('#hList').innerHTML=html||'<div class="card"><small>Chưa có lịch sử cho bộ lọc này.</small></div>'},
            eng(){const per=+$('#eP').value,cut=per?Date.now()-per*864e5:0,so=$('#eS').value;let rows=S.hist.filter(h=>h.link&&S.eng[h.link]&&(!cut||Date.parse(h.time.replace(' ','T'))>=cut)).map(h=>{const a=S.eng[h.link],l=a[a.length-1],sc=l.likes+l.comments*2+l.shares*3;return{h,l,sc}});
             rows.sort(so=='Mới nhất'?(a,b)=>b.h.time.localeCompare(a.h.time):so=='Tương tác cao'?(a,b)=>(b.l.likes+b.l.comments+b.l.shares)-(a.l.likes+a.l.comments+a.l.shares):(a,b)=>b.sc-a.sc);
             const tot=rows.reduce((s,r)=>({l:s.l+r.l.likes,c:s.c+r.l.comments,s:s.s+r.l.shares}),{l:0,c:0,s:0});$('#eK').innerHTML=[['Bài',rows.length],['Thích',tot.l],['Bình luận',tot.c],['Chia sẻ',tot.s]].map(a=>'<div class="kp">'+a[0]+'<b>'+a[1]+'</b></div>').join('');
@@ -989,6 +1015,37 @@ jobs:
            acc(){const a=S.acc;$('#aT').textContent=a?(a.ok?'● Đã đăng nhập Facebook'+(a.uid?' • ID '+a.uid:''):'● Chưa đăng nhập'):'Chưa kiểm tra đăng nhập';$('#sBg').checked=!!S.set.bg;$('#sFb').checked=!!S.set.showFb;$('#sJ1').value=S.set.j1;$('#sJ2').value=S.set.j2;$('#sTh').value=S.set.theme;$('#aV').textContent='FACEBOOK AUTUPRO - LÊ HIẾU 093579.1000 • build '+BUILD+(Br()?' • trình duyệt nhúng: sẵn sàng':' • THIẾU plugin trình duyệt');$('#lg').textContent=S.log.slice(-70).join('\n')},
            all(){R.groups();R.trash();R.find();R.camp();R.queue();R.hist();R.eng();R.acc();tick()}};
           function nbadge(){const b=$('#nav-trash b');if(b)b.textContent=S.trash.length?'Đã xóa '+S.trash.length:'Đã xóa'}
+          /* ---------- lịch âm / dương, đếm ngược Tết ---------- */
+          (function(){const PI=Math.PI,TZ=7;
+          function jdFromDate(dd,mm,yy){const a=Math.floor((14-mm)/12),y=yy+4800-a,m=mm+12*a-3;let jd=dd+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-Math.floor(y/100)+Math.floor(y/400)-32045;if(jd<2299161)jd=dd+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-32083;return jd}
+          function jdToDate(jd){let a,b,c;if(jd>2299160){a=jd+32044;b=Math.floor((4*a+3)/146097);c=a-Math.floor(b*146097/4)}else{b=0;c=jd+32082}const d=Math.floor((4*c+3)/1461),e=c-Math.floor(1461*d/4),m=Math.floor((5*e+2)/153);return[e-Math.floor((153*m+2)/5)+1,m+3-12*Math.floor(m/10),b*100+d-4800+Math.floor(m/10)]}
+          function NewMoon(k){const T=k/1236.85,T2=T*T,T3=T2*T,dr=PI/180;let J=2415020.75933+29.53058868*k+0.0001178*T2-0.000000155*T3;J+=0.00033*Math.sin((166.56+132.87*T-0.009173*T2)*dr);const M=359.2242+29.10535608*k-0.0000333*T2-0.00000347*T3,Mp=306.0253+385.81691806*k+0.0107306*T2+0.00001236*T3,F=21.2964+390.67050646*k-0.0016528*T2-0.00000239*T3;let C=(0.1734-0.000393*T)*Math.sin(M*dr)+0.0021*Math.sin(2*dr*M);C=C-0.4068*Math.sin(Mp*dr)+0.0161*Math.sin(dr*2*Mp);C=C-0.0004*Math.sin(dr*3*Mp);C=C+0.0104*Math.sin(dr*2*F)-0.0051*Math.sin(dr*(M+Mp));C=C-0.0074*Math.sin(dr*(M-Mp))+0.0004*Math.sin(dr*(2*F+M));C=C-0.0004*Math.sin(dr*(2*F-M))-0.0006*Math.sin(dr*(2*F+Mp));C=C+0.0010*Math.sin(dr*(2*F-Mp))+0.0005*Math.sin(dr*(2*Mp+M));const dt=T<-11?0.001+0.000839*T+0.0002261*T2-0.00000845*T3-0.000000081*T*T3:-0.000278+0.000265*T+0.000262*T2;return J+C-dt}
+          function SunLongitude(jdn){const T=(jdn-2451545.0)/36525,T2=T*T,dr=PI/180,M=357.52910+35999.05030*T-0.0001559*T2-0.00000048*T*T2,L0=280.46645+36000.76983*T+0.0003032*T2;let DL=(1.9146-0.004817*T-0.000014*T2)*Math.sin(dr*M);DL+=(0.019993-0.000101*T)*Math.sin(dr*2*M)+0.00029*Math.sin(dr*3*M);let L=(L0+DL)*dr;L=L-PI*2*Math.floor(L/(PI*2));return L}
+          const sunLon=d=>Math.floor(SunLongitude(d-0.5-TZ/24)/PI*6),nmDay=k=>Math.floor(NewMoon(k)+0.5+TZ/24);
+          function m11(yy){const off=jdFromDate(31,12,yy)-2415021,k=Math.floor(off/29.530588853);let nm=nmDay(k);if(sunLon(nm)>=9)nm=nmDay(k-1);return nm}
+          function leapOff(a11){const k=Math.floor((a11-2415021.076998695)/29.530588853+0.5);let last=0,i=1,arc=sunLon(nmDay(k+i));do{last=arc;i++;arc=sunLon(nmDay(k+i))}while(arc!=last&&i<14);return i-1}
+          window.jdFromDate=jdFromDate;
+          window.convertSolar2Lunar=function(dd,mm,yy){const dn=jdFromDate(dd,mm,yy),k=Math.floor((dn-2415021.076998695)/29.530588853);let ms=nmDay(k+1);if(ms>dn)ms=nmDay(k);let a11=m11(yy),b11=a11,ly;if(a11>=ms){ly=yy;a11=m11(yy-1)}else{ly=yy+1;b11=m11(yy+1)}const ld=dn-ms+1,diff=Math.floor((ms-a11)/29);let leap=0,lm=diff+11;if(b11-a11>365){const lo=leapOff(a11);if(diff>=lo){lm=diff+10;if(diff==lo)leap=1}}if(lm>12)lm-=12;if(lm>=11&&diff<4)ly-=1;return[ld,lm,ly,leap]};
+          window.convertLunar2Solar=function(ld,lm,ly,leap){let a11,b11;if(lm<11){a11=m11(ly-1);b11=m11(ly)}else{a11=m11(ly);b11=m11(ly+1)}const k=Math.floor(0.5+(a11-2415021.076998695)/29.530588853);let off=lm-11;if(off<0)off+=12;if(b11-a11>365){const lo=leapOff(a11);let lmn=lo-2;if(lmn<0)lmn+=12;if(leap&&lm!=lmn)return[0,0,0];else if(leap||off>=lo)off+=1}return jdToDate(nmDay(k+off)+ld-1)}})();
+          function dateStrip(){try{const d=new Date(),dd=d.getDate(),mm=d.getMonth()+1,yy=d.getFullYear();const wd=['Chủ nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'][d.getDay()];
+          const lu=convertSolar2Lunar(dd,mm,yy),CAN=['Giáp','Ất','Bính','Đinh','Mậu','Kỷ','Canh','Tân','Nhâm','Quý'],CHI=['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'],cc=y=>CAN[(y+6)%10]+' '+CHI[(y+8)%12],p2=n=>String(n).padStart(2,'0');
+          setT('dS','📅 '+wd+', '+p2(dd)+'/'+p2(mm)+'/'+yy);setT('dL','🌙 Âm lịch '+p2(lu[0])+'/'+p2(lu[1])+(lu[3]?' (nhuận)':'')+' • '+cc(lu[2]));
+          let tt;if(lu[0]==1&&lu[1]==1&&!lu[3])tt='🧧 Hôm nay là mùng 1 Tết '+cc(lu[2])+'!';else{const ny=lu[2]+1,sd=convertLunar2Solar(1,1,ny,0);tt='🧧 Còn '+(jdFromDate(sd[0],sd[1],sd[2])-jdFromDate(dd,mm,yy))+' ngày đến Tết '+cc(ny)+' ('+p2(sd[0])+'/'+p2(sd[1])+')'}
+          setT('dT',tt)}catch(e){}}
+          setInterval(dateStrip,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)dateStrip()});
+          /* ---------- kiểm tra link bài gốc ---------- */
+          function shareInfo(u){u=String(u||'').trim();const out={ok:false,kind:'',clean:u,why:''};if(!u){out.why='Chưa dán link';return out}
+          let url;try{url=new URL(/^https?:\/\//i.test(u)?u:'https://'+u)}catch(e){out.why='Link không hợp lệ';return out}
+          const h=url.hostname.replace(/^(www|m|mbasic|web|l|lm)\./,'').toLowerCase();if(!/^(facebook\.com|fb\.com|fb\.watch|fb\.me)$/.test(h)){out.why='Không phải link Facebook ('+h+')';return out}
+          const p=url.pathname,q=k=>url.searchParams.get(k);let kind='';
+          if(/^\/share\/(p|v|r)\//.test(p))kind='Link chia sẻ (share)';else if(/\/(posts|permalink)\/[\w-]+/.test(p))kind='Bài viết';else if(/\/(videos|reel|reels)\/\d+/.test(p)||h=='fb.watch')kind='Video / Reel';
+          else if(/^\/watch\/?$/.test(p)&&q('v'))kind='Video (Watch)';else if(/^\/(permalink|story)\.php$/.test(p)&&(q('story_fbid')||q('id')))kind='Bài viết';else if(/^\/photo(\.php)?/.test(p)&&(q('fbid')||/\/\d+/.test(p)))kind='Ảnh';else if(/\/photos\/[^/]+\/\d+/.test(p))kind='Ảnh';
+          if(!kind){out.why='Link này là trang / nhóm / hồ sơ, không phải một bài viết cụ thể';return out}
+          for(const k of[...url.searchParams.keys()])if(/^(mibextid|fbclid|ref|rdid|_rdr|sfnsn|__cft__.*|__tn__)$/.test(k))url.searchParams.delete(k);
+          url.hostname=url.hostname.replace(/^(m|mbasic|web)\./,'www.');out.clean=url.toString();out.kind=kind;out.ok=true;return out}
+          function showChk(o){const el=$('#cChk');if(!el)return;if(!o){el.innerHTML='';return}const ic=o.st=='ok'?'✔':o.st=='wt'?'…':'✖';
+          el.innerHTML='<div class="ck '+o.st+'"><b>'+ic+' '+esc(o.msg||'')+'</b>'+(o.author?'<div>👤 '+esc(o.author)+'</div>':'')+(o.desc?'<div class="cd">“'+esc(o.desc)+'”</div>':'')+(o.kind?'<small>Loại: '+esc(o.kind)+'</small>':'')+(o.url?'<div class="ca"><button class="g s" data-u="'+esc(o.final||o.url)+'" onclick="A.openU(this.dataset.u)">↗ Mở link</button></div>':'')+'</div>'}
+          let HF='all';
           /* ---------- hành động ---------- */
           const A={
            tg(k,v){v?SEL.add(k):SEL.delete(k);const e=$('#gSelN');if(e)e.textContent='Đã chọn '+SEL.size+' nhóm'},tt(k,v){v?TSEL.add(k):TSEL.delete(k)},tf(k,v){v?FSEL.add(k):FSEL.delete(k);const e=$('#fSelN');if(e)e.textContent='Đã chọn '+FSEL.size+' / '+FR.length+' nhóm'},
@@ -1027,7 +1084,7 @@ jobs:
            campSave(upd){let n=S.camp;if(!upd||!n){n=prompt('Tên chiến dịch:');if(!n)return}const c=campRead();c.name=n;const i=S.camps.findIndex(x=>x.name==n);if(i>=0)S.camps[i]=c;else S.camps.push(c);S.camp=n;sv();R.camp();toast('Đã lưu chiến dịch')},
            campLoad(){const n=$('#cLib').value;S.camp=n||null;const c=S.camps.find(x=>x.name==n);if(c)campWrite(c);else R.camp();sv()},
            campDel(){if(!S.camp||!confirm('Xóa chiến dịch “'+S.camp+'”?'))return;S.camps=S.camps.filter(x=>x.name!=S.camp);S.camp=null;sv();R.camp()},
-
+           
            campRun:()=>campRun(),verify:()=>verifyPosts(),engRefresh:()=>engRefresh(),
            exportHist(){const rows=[['Thời gian','Loại','Tài khoản','Mục tiêu','Trạng thái','Chi tiết','Link']].concat(S.hist.map(h=>[h.time,h.kind,h.acc,h.target,h.status,h.detail,h.link]));const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
             if(navigator.share){navigator.share({title:'Lịch sử FACEBOOK AUTU',text:csv}).catch(()=>{})}else if(navigator.clipboard){navigator.clipboard.writeText(csv);toast('Đã copy CSV')}},
@@ -1042,6 +1099,19 @@ jobs:
            restoreBk(){const v=prompt('Dán bản sao lưu JSON:');if(!v)return;try{const d=JSON.parse(v);if(!Array.isArray(d.groups))throw 0;S=Object.assign(S,d);sv();R.all();toast('Đã khôi phục dữ liệu')}catch(e){alert('Dữ liệu không hợp lệ')}},
            act(v){$('#cAct').value=v;A.campUi()},fClr(){FSEL.clear();R.find()},
           retry(){const bad=QUEUE.filter(q=>q.st=='LỖI').map(q=>q.g);if(!bad.length)return toast('Không có nhóm lỗi để chạy lại');CSEL.clear();bad.forEach(k=>CSEL.add(k));$('#cMode').value='Chọn thủ công';R.camp();campRun()},
+          hf(v){HF=v;R.hist()},
+          openU(u){if(Br())Br().openExternal({url:u});else window.open(u)},
+          copy(t){try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>toast('Đã sao chép'),()=>A.copy2(t));else A.copy2(t)}catch(e){A.copy2(t)}},
+          copy2(t){const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();try{document.execCommand('copy');toast('Đã sao chép')}catch(e){toast('Không sao chép được')}x.remove()},
+          hretry(){const today=now().slice(0,10),tm=todayMap();const ks=[...new Set(S.hist.filter(h=>h.gurl&&String(h.time).slice(0,10)==today&&(h.kind=='Đăng bài'||h.kind=='Chia sẻ')&&!sOK(h.status)&&!sPend(h.status)&&!/SKIPPED/.test(h.status)&&!tm[gk(h.gurl)]).map(h=>gk(h.gurl)))];if(!ks.length)return toast('Hôm nay không có nhóm lỗi cần thử lại');CSEL.clear();ks.forEach(k=>CSEL.add(k));$('#cMode').value='Chọn thủ công';R.camp();P('camp');toast('Đã chọn '+ks.length+' nhóm lỗi — kiểm tra nội dung rồi bấm Chạy')},
+          async chkLink(){const el=$('#cUrl'),inf=shareInfo(el.value);if(!inf.ok){showChk({st:'er',msg:inf.why});return}
+          if(inf.clean!==el.value.trim()){el.value=inf.clean;R.camp();sv()}
+          showChk({st:'wt',msg:'Link hợp lệ ('+inf.kind+'). Đang mở Facebook để kiểm tra bài…',url:inf.clean});
+          await task('Kiểm tra link bài gốc',async()=>{prog('Mở link bài gốc',0,1);await nav(inf.clean,2500);let r=null;try{r=await run(pg_check,null,60)}catch(e){r={err:e.message}}
+          if(!r||r.err){showChk({st:'er',msg:'Không đọc được trang: '+((r&&r.err)||'không rõ'),url:inf.clean});lastRes='Kiểm tra link: lỗi';return}
+          let st='ok',msg='Link OK — bài tồn tại, có thể chia sẻ.';
+          if(r.login){st='er';msg='Facebook yêu cầu đăng nhập để xem bài này.'}else if(r.gone){st='er';msg='Bài không còn hiển thị (đã xóa, riêng tư hoặc bạn không có quyền xem).'}else if(!r.hasArticle&&!r.desc){st='wt';msg='Mở được trang nhưng chưa nhận ra bài viết. Hãy mở thử link để xem.'}else if(!r.hasShare){st='wt';msg='Thấy bài, nhưng chưa thấy nút Chia sẻ (bài có thể bị giới hạn chia sẻ).'}
+          showChk({st,msg,url:inf.clean,final:r.href,kind:inf.kind,author:r.author,desc:r.desc});prog('Xong',1,1,true);lastRes='Kiểm tra link: '+msg},{total:1})},
           close(){$('#sheet').classList.remove('on')}};
           function shB(h){$('#shB').innerHTML=h;$('#sheet').classList.add('on')}
           function theme(){const t=S.set.theme;document.documentElement.dataset.th=t=='auto'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):t}
@@ -1051,80 +1121,11 @@ jobs:
           $('#nav').innerHTML=TABS.map(t=>'<button id="nav-'+t[0]+'" onclick="P(\''+t[0]+'\')"><svg viewBox="0 0 24 24">'+ICON[t[0]]+'</svg><b style="font-weight:600">'+t[1]+'</b></button>').join('');
           function dock(k){const d=$('#dock');if(!d)return;const H={groups:'<small id="gSelN" style="display:block;text-align:center;margin-bottom:4px"></small><div class="grid2"><button class="g s" onclick="A.selAll(1)">Chọn đang lọc</button><button class="g s" onclick="A.selAll(0)">Bỏ chọn</button><button class="s" onclick="A.joinSel()">＋ Yêu cầu tham gia</button><button class="r s" onclick="A.delSel()">Xóa đã chọn</button></div>',find:'<small id="fSelN" style="display:block;text-align:center;margin-bottom:4px"></small><div class="grid3"><button class="g s" onclick="A.fSel()">Chọn tất cả</button><button class="g s" onclick="A.fClr()">Bỏ chọn</button><button class="s" onclick="A.fJoin()">Gửi yêu cầu vào</button></div>',camp:'<button class="run" onclick="A.campRun()">▶ CHẠY <span id="cRunN"></span></button>'}[k];d.innerHTML=H||'';d.classList.toggle('on',!!H);if(k=='groups'){const e=$('#gSelN');if(e)e.textContent='Đã chọn '+SEL.size+' / '+gRows().length+' nhóm đang hiện'}if(k=='camp'){const e=$('#cRunN');if(e){const n=campGroups(campRead()).length;e.textContent=n?'• '+n+' nhóm':''}}if(k=='find'){const e=$('#fSelN');if(e)e.textContent='Đã chọn '+FSEL.size+' / '+FR.length+' nhóm'}}
            function P(k){document.querySelectorAll('.pg').forEach(e=>e.classList.toggle('on',e.id=='pg-'+k));TABS.forEach(t=>$('#nav-'+t[0]).classList.toggle('on',t[0]==k));$('#main').scrollTop=0;(R[k]||R.all)();dock(k)}
-          /* ===== v4: xem bài chia sẻ / kiểm tra link / lịch sử PRO ===== */
-          let VIEW=false,LASTCAP='',histN=60;
-          const nzs=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase().trim();
-          const srcTok=u=>[...new Set([...String(u||'').matchAll(/(\d{8,})|share\/[pvr]\/([\w-]+)/gi)].map(m=>String(m[1]||m[2]).toLowerCase()))];
-          const hCls=h=>sOK(h.status)?'ok':sPend(h.status)?'pend':/SKIPPED/.test(h.status)?'skip':'err';
-          async function pg_check(A,o){for(let i=0;i<10&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(1800);
-           const body=document.body?document.body.innerText:'';
-           const u=/(bạn hiện không xem được nội dung này|this content isn.t available|nội dung này hiện không|không khả dụng|isn.t available right now)/i.test(body.slice(0,2500));
-           const href=location.href.toLowerCase(),g=!o.gk||href.includes('/groups/'+String(o.gk).toLowerCase());
-           const art=document.querySelector('[role=main] [role=article]')||document.querySelector('[role=article]');
-           const at=A.norm((art?art.innerText:body).slice(0,7000)),ah=(art?art.innerHTML:'').toLowerCase().slice(0,200000);
-           const cap=!!o.sig&&at.includes(A.norm(o.sig).slice(0,28));
-           const src=!!(o.toks&&o.toks.length)&&o.toks.some(t=>t&&(ah.includes(t)||at.includes(t)));
-           return{u,g,cap,src,art:!!art,len:at.length,href:location.href}}
-          function judgeChk(r,o){if(!r)return{s:'CHƯA CHẮC',n:'Không đọc được trang'};
-           if(r.u)return{s:'SAI',n:'Facebook báo không xem được nội dung (link sai, bài bị ẩn/xóa hoặc đang chờ duyệt)'};
-           if(!r.g)return{s:'SAI',n:'Link mở ra không thuộc đúng nhóm này'};
-           if(!r.art)return{s:'CHƯA CHẮC',n:'Mở được link nhưng không thấy khung bài viết'};
-           if(o.share){if(r.src)return{s:'ĐÚNG',n:'Khớp bài gốc'+(r.cap?' + caption':'')};if(r.cap)return{s:'ĐÚNG',n:'Khớp caption chia sẻ'};if(o.sig||(o.toks&&o.toks.length))return{s:'CHƯA CHẮC',n:'Mở được, đúng nhóm nhưng chưa đối chiếu được bài gốc/caption'}}
-           else if(o.sig){if(r.cap)return{s:'ĐÚNG',n:'Khớp nội dung bài đăng'};return{s:'CHƯA CHẮC',n:'Mở được, đúng nhóm nhưng nội dung chưa khớp (có thể bị cắt “Xem thêm”)'}}
-           return{s:'ĐÚNG',n:'Link mở được • đúng nhóm (không có mẫu nội dung để đối chiếu)'}}
-          function chkItem(r){return{link:r.link,name:r.name||r.target||'',gk:gk(r.gurl||''),sig:r.sig||'',toks:r.toks||[],share:(r.act=='share'||r.kind=='Chia sẻ')}}
-          function setChk(link,res){QUEUE.forEach(q=>{if(q.link==link)q.chk=res});S.hist.forEach(h=>{if(h.link==link)h.chk=res});sv();R.queue();RT('hist',300)}
-          async function checkCore(items){let ok=0,bad=0,unk=0;for(let i=0;i<items.length&&!T.stop;i++){const it=items[i];prog('Kiểm tra link: '+(it.name||it.link),i,items.length);let res;try{await nav(it.link,2500);const r=await run(pg_check,{gk:it.gk,sig:it.sig,toks:it.toks,share:it.share},60);res=judgeChk(r,it)}catch(e){res={s:'CHƯA CHẮC',n:'Lỗi: '+e.message}}res.t=now();setChk(it.link,res);if(res.s=='ĐÚNG')ok++;else if(res.s=='SAI')bad++;else unk++;prog((it.name||'')+' → '+res.s,i+1,items.length,true)}return{ok,bad,unk}}
-          const chkChip=c=>c?chip(c.s=='ĐÚNG'?'LINK ĐÚNG ✓':c.s=='SAI'?'LINK SAI ✗':'CHƯA CHẮC ?',c.s=='ĐÚNG'?'ok':c.s=='SAI'?'er':'wt'):'';
-          const chkRes=r=>'Kiểm tra link: đúng '+r.ok+' • sai '+r.bad+' • chưa chắc '+r.unk;
-          Object.assign(A,{
-           async viewPost(u,ev){if(ev){ev.preventDefault();ev.stopPropagation()}if(!u)return toast('Chưa có link');if(!/^https?:/i.test(u))return toast('Link không hợp lệ');
-            if(T.busy)return toast('Đang chạy tác vụ — bấm “Hiện FB” ở thanh trên để xem trực tiếp');if(!Br())return A.openPost(u);
-            try{await Br().openWeb({url:u,mode:'mobile',show:true,lite:'none'});VIEW=true;await Br().setBarTitle({title:'Xem bài • '+u.replace('https://www.facebook.com/','').slice(0,38)});try{await Br().setStopTitle({title:'Đóng'})}catch(e){}}catch(e){A.openPost(u)}},
-           viewLast(){const q=[...QUEUE].reverse().find(x=>x.link),h=S.hist.find(x=>x.link),u=(q&&q.link)||(h&&h.link);if(!u)return toast('Chưa có link bài nào');A.viewPost(u)},
-           chkOne(u,ev){if(ev){ev.preventDefault();ev.stopPropagation()}const ref=QUEUE.find(x=>x.link==u)||S.hist.find(h=>h.link==u);if(!ref)return;task('Kiểm tra link bài',async()=>{const r=await checkCore([chkItem(ref)]);lastRes=chkRes(r)},{total:1})},
-           chkAll(){const its=QUEUE.filter(q=>q.link).map(chkItem);if(!its.length)return toast('Hàng đợi chưa có link bài nào');task('Kiểm tra link ('+its.length+')',async()=>{const r=await checkCore(its);lastRes=chkRes(r)},{total:its.length})},
-           hset(k,v){S.set[k]=v;histN=60;sv();R.hist()},
-           hChkVis(){const its=(window._hVis||[]).filter(h=>h.link).slice(0,40).map(chkItem);if(!its.length)return toast('Không có bài nào có link trong danh sách đang lọc');task('Kiểm tra link ('+its.length+')',async()=>{const r=await checkCore(its);lastRes=chkRes(r)},{total:its.length})},
-           hDel(id,ev){if(ev){ev.preventDefault();ev.stopPropagation()}S.hist=S.hist.filter(x=>String(x.id)!=String(id));sv();R.hist()},
-           hAgain(id,ev){if(ev){ev.preventDefault();ev.stopPropagation()}const h=S.hist.find(x=>String(x.id)==String(id));if(!h)return;const share=h.kind=='Chia sẻ',c=campRead();c.act=share?'share':'post';if(share)c.url=h.src||c.url;if(h.txt)c.text=h.txt;c.mode='Chọn thủ công';c.sel=[gk(h.gurl)];campWrite(c);P('camp');toast('Đã nạp lại bài + nhóm — bấm CHẠY để làm lại')},
-           hCopy(){const ls=(window._hVis||[]).filter(h=>sOK(h.status)&&h.link).map(h=>h.link);if(!ls.length)return toast('Chưa có link bài thành công');if(navigator.clipboard){navigator.clipboard.writeText(ls.join('\n'));toast('Đã copy '+ls.length+' link bài')}else prompt('Link bài:',ls.join('\n'))},
-           hClean(){const cut=Date.now()-30*864e5,n=S.hist.filter(h=>Date.parse((h.time||'').replace(' ','T'))<cut).length;if(!n)return toast('Không có lịch sử cũ hơn 30 ngày');if(confirm('Xóa '+n+' mục lịch sử cũ hơn 30 ngày?')){S.hist=S.hist.filter(h=>Date.parse((h.time||'').replace(' ','T'))>=cut);sv();R.all()}},
-           hClear(){if(!S.hist.length)return;if(confirm('Xóa TOÀN BỘ '+S.hist.length+' mục lịch sử?\n(Không ảnh hưởng danh sách nhóm)')){S.hist=[];sv();R.all()}},
-           exportHist(){const rows=[['Thời gian','Loại','Tài khoản','Mục tiêu','Trạng thái','Chi tiết','Link bài','Kiểm tra link','Ghi chú kiểm tra']].concat(S.hist.map(h=>[h.time,h.kind,h.acc,h.target,h.status,h.detail,h.link,h.chk?h.chk.s:'',h.chk?h.chk.n:'']));const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
-            if(navigator.share){navigator.share({title:'Lịch sử FACEBOOK AUTUPRO',text:csv}).catch(()=>{})}else if(navigator.clipboard){navigator.clipboard.writeText(csv);toast('Đã copy CSV')}}
-          });
-          R.queue=function(){const lb=a=>a=='share'?'👁 Xem bài chia sẻ':'👁 Xem bài đăng';const c={ok:0,pd:0,er:0,w:0};QUEUE.forEach(q=>{if(q.st=='THÀNH CÔNG')c.ok++;else if(q.st=='CHỜ DUYỆT'||q.st=='CHƯA XÁC NHẬN')c.pd++;else if(q.st=='LỖI')c.er++;else if(q.st=='CHỜ'||q.st=='ĐANG CHẠY')c.w++});
-           const s=$('#qSum');if(s)s.textContent=QUEUE.length?('✓ '+c.ok+' • ⏳ '+c.pd+' • ✗ '+c.er+' • còn '+c.w):'';
-           $('#cQ').innerHTML=QUEUE.length?QUEUE.map((q,i)=>'<div class="gi"><div class="gb"><b>'+(i+1)+'. '+esc(q.name)+'</b><div class="chips">'+chip(q.st,q.st=='THÀNH CÔNG'?'ok':q.st=='LỖI'?'er':q.st=='ĐANG CHẠY'?'bl':(q.st=='CHỜ DUYỆT'||q.st=='CHƯA XÁC NHẬN')?'wt':'')+chkChip(q.chk)+'</div>'+(q.note?'<span class="note">'+esc(q.note)+'</span>':'')+(q.chk&&q.chk.n?'<span class="note">'+esc(q.chk.n)+'</span>':'')+((q.link||q.gurl)?'<div class="qb">'+(q.link?'<button class="s jb" data-u="'+esc(q.link)+'" onclick="A.viewPost(this.dataset.u,event)">'+lb(q.act)+'</button><button class="g s" data-u="'+esc(q.link)+'" onclick="A.chkOne(this.dataset.u,event)">✔ Kiểm tra link</button>':'')+(q.gurl?'<button class="g s" data-u="'+esc(q.gurl)+'" onclick="A.viewPost(this.dataset.u,event)">👁 Xem nhóm'+(q.link?'':' để kiểm tra')+'</button>':'')+'</div>':'')+'</div></div>').join(''):'<small>Chưa có hàng đợi.</small>'};
-          function histRow(h){const k=hCls(h),btn=(cl,l,fn,a,d)=>'<button class="'+cl+' s" data-'+d+'="'+esc(String(a))+'" onclick="'+fn+'(this.dataset.'+d+',event)">'+l+'</button>';
-           const det=h.detail?'<span class="note">'+esc(String(h.detail).slice(0,240))+'</span>':'';
-           return'<div class="gi h'+k+'"><div class="gb"><b'+(h.gurl?' class="lk" data-u="'+esc(h.gurl)+'" onclick="A.openG(this.dataset.u,event)"':'')+'>'+esc(h.target)+(h.gurl?' ↗':'')+'</b><small>'+esc((h.time||'').slice(11))+' • '+esc(h.kind)+(h.acc?' • '+esc(h.acc):'')+'</small><div class="chips">'+chip(h.status,k=='ok'?'ok':k=='pend'?'wt':k=='skip'?'':'er')+(h.link?chip('CÓ LINK','bl'):'')+chkChip(h.chk)+'</div>'+det+(h.chk&&h.chk.n?'<span class="note">'+esc(h.chk.n)+'</span>':'')+(h.src?'<span class="note">Bài gốc: '+esc(h.src)+'</span>':'')+(h.link?'<span class="note">Link bài: '+esc(h.link)+'</span>':'')
-           +'<div class="qb">'+(h.link?btn('jb','👁 Xem bài','A.viewPost',h.link,'u')+btn('g','✔ Kiểm tra','A.chkOne',h.link,'u'):'')+(k=='err'&&(h.kind=='Đăng bài'||h.kind=='Chia sẻ')&&h.gurl?btn('g','↻ Làm lại','A.hAgain',h.id,'i'):'')+btn('g','🗑','A.hDel',h.id,'i')+'</div></div></div>'}
-          R.hist=function(){const kd=$('#hKind').value,q=nzs($('#hQ').value),rg=S.set.hr==null?7:+S.set.hr,st=S.set.hs||'all',so=($('#hSort')||{}).value||'Mới nhất',today=now().slice(0,10),cutT=rg>1?Date.now()-rg*864e5:0;
-           const base=S.hist.filter(h=>{if(kd!='Tất cả'&&!(kd=='Chiến dịch'?/Đăng|Chia/.test(h.kind):h.kind==kd))return false;if(rg==1){if((h.time||'').slice(0,10)!=today)return false}else if(rg>1&&Date.parse((h.time||'').replace(' ','T'))<cutT)return false;if(q&&!nzs(h.target+' '+h.status+' '+h.detail+' '+h.kind+' '+h.link).includes(q))return false;return true});
-           const cnt={all:base.length,ok:0,pend:0,err:0,skip:0};base.forEach(h=>cnt[hCls(h)]++);const dn=cnt.ok+cnt.pend+cnt.err,rate=dn?Math.round(cnt.ok/dn*100):0,wl=base.filter(h=>h.link).length;
-           $('#hK').innerHTML=[['Tổng',cnt.all],['Thành công',cnt.ok],['Chờ duyệt',cnt.pend],['Lỗi',cnt.err],['Tỷ lệ',rate+'%'],['Có link',wl]].map(a=>'<div class="kp">'+a[0]+'<b>'+a[1]+'</b></div>').join('');
-           document.querySelectorAll('#hRange button').forEach(b=>b.classList.toggle('on',+b.dataset.r==rg));
-           document.querySelectorAll('#hStat button').forEach(b=>{const s=b.dataset.s;b.classList.toggle('on',s==st);const n=b.querySelector('b');if(n)n.textContent=cnt[s]});
-           let rows=base.filter(h=>st=='all'||hCls(h)==st);
-           if(so=='Cũ nhất')rows=rows.slice().reverse();else if(so=='Lỗi trước')rows=rows.slice().sort((a,b)=>(hCls(b)=='err')-(hCls(a)=='err'));else if(so=='Nhóm A→Z')rows=rows.slice().sort((a,b)=>nzs(a.target).localeCompare(nzs(b.target)));
-           window._hVis=rows;
-           const rs={};base.filter(h=>hCls(h)=='err').forEach(h=>{let r=(h.status=='LỖI'||/^FAILED/.test(h.status))?String(h.detail||h.status).split('•')[0]:h.status;r=r.trim().slice(0,60)||'LỖI';rs[r]=(rs[r]||0)+1});
-           const top=Object.entries(rs).sort((a,b)=>b[1]-a[1]).slice(0,5);
-           $('#hErr').innerHTML=top.length?'<details class="card slim"><summary>⚠ Thống kê lỗi ('+cnt.err+')</summary>'+top.map(t=>'<div class="row" style="margin:4px 0"><small>'+esc(t[0])+'</small><b class="fx" style="color:var(--err)">'+t[1]+'</b></div>').join('')+'</details>':'';
-           const grp=so=='Mới nhất'||so=='Cũ nhất';let html='',lastD='';const shown=rows.slice(0,histN);
-           for(const h of shown){if(grp){const d=(h.time||'').slice(0,10);if(d!=lastD){lastD=d;const dr=rows.filter(x=>(x.time||'').slice(0,10)==d),o=dr.filter(x=>hCls(x)=='ok').length,e=dr.filter(x=>hCls(x)=='err').length,p=dr.filter(x=>hCls(x)=='pend').length;html+='<div class="dh">'+(d==today?'HÔM NAY':esc(d))+' • '+dr.length+' mục • ✓ '+o+' • ⏳ '+p+' • ✗ '+e+'</div>'}}html+=histRow(h)}
-           if(rows.length>histN)html+='<button class="g" style="width:100%" onclick="histN+=60;R.hist()">Hiện thêm ('+(rows.length-histN)+')</button>';
-           $('#hList').innerHTML=html||'<div class="card"><small>Không có mục nào khớp bộ lọc.</small></div>'};
-          try{if(Br()&&Br().addListener)Br().addListener('stopRequested',()=>{if(VIEW&&!T.busy){VIEW=false;Br().closeWeb()}})}catch(e){}
-          (()=>{const fix=()=>{if(window.scrollY||document.documentElement.scrollTop||document.body.scrollTop){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0}};window.addEventListener('scroll',fix,{passive:true});if(window.visualViewport){visualViewport.addEventListener('resize',fix);visualViewport.addEventListener('scroll',fix)}document.addEventListener('focusin',()=>setTimeout(fix,60));setInterval(()=>{if(T.busy)fix()},800)})();
-
           /* ---------- khởi động ---------- */
           (async function init(){let raw='';try{if(Br()){const r=await Br().load({key:KEY});raw=r&&r.value||''}}catch(e){}if(!raw)try{raw=localStorage.getItem(KEY)||''}catch(e){}
            if(raw)try{const d=JSON.parse(raw);S=Object.assign(S,d);S.set=Object.assign({skipOk:true,bg:true,showFb:false,theme:'auto',j1:15,j2:30,f:'Tất cả',s:'Thành viên ↓'},d.set||{})}catch(e){}
            if(!S.mig3){S.groups.forEach(g=>{if(g.membership_status=='ĐÃ THAM GIA'){if(g.sync_source=='NHÓM CỦA BẠN'){g.join_evidence=g.join_evidence||'danh sách nhóm của bạn'}else{g.membership_status='KHÔNG XÁC MINH';g.membership_verified=false;g.sync_verified=false;g.join_evidence=''}}});S.mig3=1;sv()}
-           S.set.s='Thành viên ↓';$('#gF').value=S.set.f;$('#gS').value=S.set.s;$('#gSkip').checked=!!S.set.skipOk;theme();R.all();try{if(S.draft)campWrite(S.draft)}catch(e){}A.campUi();R.recent();P('groups');
+           S.set.s='Thành viên ↓';$('#gF').value=S.set.f;$('#gS').value=S.set.s;$('#gSkip').checked=!!S.set.skipOk;$('#cLite').checked=S.set.light!==false;theme();R.all();dateStrip();try{if(S.draft)campWrite(S.draft)}catch(e){}A.campUi();R.recent();P('groups');
            if(Br()&&Br().addListener)Br().addListener('stopRequested',()=>A.stop());
            if(!Br())toast('Chưa tìm thấy plugin trình duyệt');else try{await needLogin();tick();R.acc()}catch(e){}})();
           document.addEventListener('input',e=>{if(e.target.id=='cTx'){const n=$('#cLen');if(n)n.textContent=e.target.value.length+' ký tự'}});
