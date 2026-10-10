@@ -652,10 +652,16 @@ jobs:
           .ew{margin:8px 0 2px;font-size:12px;font-weight:700;color:#B91C1C;background:rgba(220,38,38,.1);padding:6px 10px;border-radius:10px}.ev{margin:8px 0 2px;font-size:12px;font-weight:700;color:#15803D}
           .ept{margin:4px 0;font-size:12.5px;color:var(--mut);font-style:italic}.erx{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.erx span{font-size:11.5px;background:var(--chip);padding:3px 9px;border-radius:99px}
           .ecm{margin:6px 0}.ecm summary{font-weight:700;font-size:13px;cursor:pointer}.cmi{padding:7px 0;border-bottom:1px solid var(--line)}.cmi b{display:block;font-size:12.5px}.cmi span{font-size:13px}
+
+          .qp{height:6px;border-radius:4px;background:var(--line);margin:6px 0 2px;overflow:hidden}.qp i{display:block;height:100%;background:linear-gradient(90deg,#1B74E4,#7C3AED);transition:width .35s}
+          .qs{font-size:11.5px;font-weight:700;color:var(--acc)}.qs.pz{color:#B45309}
+          #qCtl{display:none;gap:6px}body.busy #qCtl{display:flex}
+          .chip.rm{background:#FEE2E2;color:#B91C1C;font-weight:800}.chip.rw{background:#FEF3C7;color:#92400E}
+          .adm{font-size:12px;line-height:1.5;margin-top:3px;color:var(--mut,#64748B)}
           </style></head><body>
           <header><div class="logo">FACEBOOK AUTUPRO<small>LÊ HIẾU • 093579.1000</small></div><div class="sp"></div><button class="acc" id="chip" onclick="P('acc')">○ FB chưa kiểm tra</button></header>
           <div class="dstrip" id="dstrip"><span id="dS"></span><span id="dL"></span><span id="dT" class="tet"></span></div>
-          <div class="tcb" id="tcb" onclick="this.classList.toggle('x')"><div class="tcr"><b id="tcN">Không có tác vụ đang chạy</b><span class="pc" id="tcP">0%</span><button class="g s" onclick="event.stopPropagation();A.toggleFb()" id="bFb">Hiện FB</button><button class="r s" onclick="event.stopPropagation();A.stop()">■ Dừng</button></div><div class="bar"><i id="tcB"></i></div><div class="tcd"><small id="tcT">TASK CENTER</small><br><small id="tcS"></small><br><small id="tcR"></small></div></div>
+          <div class="tcb" id="tcb" onclick="this.classList.toggle('x')"><div class="tcr"><b id="tcN">Không có tác vụ đang chạy</b><span class="pc" id="tcP">0%</span><button class="g s" onclick="event.stopPropagation();A.toggleFb()" id="bFb">Hiện FB</button><button class="g s" id="bPause" onclick="event.stopPropagation();A.pause()">⏸ Tạm dừng</button><button class="r s" onclick="event.stopPropagation();A.stop()">■ Dừng</button></div><div class="bar"><i id="tcB"></i></div><div class="tcd"><small id="tcT">TASK CENTER</small><br><small id="tcS"></small><br><small id="tcR"></small></div></div>
           <main id="main">
 
 
@@ -666,7 +672,7 @@ jobs:
           <div class="grid2"><div><small>Bộ lọc</small><select id="gF" onchange="A.setF()"><option>Tất cả</option><option>Đã tham gia</option><option>Chưa tham gia</option><option>Đã gửi yêu cầu</option><option>Không đăng được</option><option>Chưa xác minh</option><option>Lỗi</option><option>Đã đăng hôm nay</option><option>Chưa đăng hôm nay</option></select></div>
           <div><small>Sắp xếp</small><select id="gS" onchange="A.setF()"><option>Thành viên ↓</option><option>Thành viên ↑</option><option>Tên A→Z</option><option>STT gốc</option><option>Đã tham gia trước</option></select></div></div>
           <label class="k"><input type="checkbox" id="gSkip" onchange="A.setF()"> Bỏ qua nhóm đã OK</label>
-          <div class="grid2"><button class="g s" onclick="A.scan('selected')">Quét đã chọn</button><button class="g s" onclick="A.scan('all')">Quét tất cả</button><button class="g s" onclick="A.addGroup()">+ Thêm nhóm</button><button class="g s" onclick="A.importTxt()">Import TXT</button>
+          <div class="grid2"><button class="g s" onclick="A.scan('selected')">Quét đã chọn</button><button class="g s" onclick="A.scan('all')">Quét tất cả</button><button class="g s" onclick="A.addGroup()">+ Thêm nhóm</button><button class="g s" onclick="A.importTxt()">Import TXT</button><button class="g s" onclick="A.admins('selected')">👤 Tìm admin (đã chọn)</button><button class="g s" onclick="A.admins('all')">👤 Tìm admin (tất cả)</button><button class="g s" onclick="A.removed('selected')">🚫 Bài bị gỡ (đã chọn)</button><button class="g s" onclick="A.removed('all')">🚫 Kiểm tra bài bị gỡ</button>
           <button class="g s" onclick="A.selAll(1)">Chọn đang lọc</button><button class="g s" onclick="A.selAll(0)">Bỏ chọn</button><button class="g s" onclick="A.delSel()">Xóa đã chọn</button><button class="g s" onclick="A.delVisible()">Xóa đang lọc</button></div>
           <input type="file" id="fileTxt" accept=".txt,text/plain" style="display:none"></details>
           <div class="row"><small id="gProg">Sẵn sàng</small><b class="fx" id="gCnt" style="color:var(--acc)">0/0</b></div><div class="bar thin"><i id="gBar"></i></div></div>
@@ -695,7 +701,7 @@ jobs:
           <label class="k"><input type="checkbox" id="cRj"> Chỉ đăng nhóm đã tham gia (tắt = vẫn thử đăng cả nhóm chưa tham gia)</label><label class="k"><input type="checkbox" id="cRs"> Chỉ nhóm đã quét OK</label><small id="cDiag"></small></div>
           <details class="card sec"><summary>⚙ Nhịp chạy &amp; chiến dịch đã lưu</summary><select id="cLib" onchange="A.campLoad()"></select><div class="grid3"><button class="s" onclick="A.campSave(0)">Lưu mới</button><button class="g s" onclick="A.campSave(1)">Cập nhật</button><button class="g s" onclick="A.campDel()">Xóa</button></div>
           <div class="grid3" style="margin-top:6px"><div><small>Nghỉ min (s)</small><input type="number" id="cD1" value="60"></div><div><small>Nghỉ max (s)</small><input type="number" id="cD2" value="120"></div><div><small>Chờ đăng (s)</small><input type="number" id="cW" value="6"></div></div><label class="k"><input type="checkbox" id="cLite" onchange="S.set.light=this.checked;sv()"> Chế độ nhẹ (tắt video tự phát, bớt hiệu ứng khi chạy)</label></details>
-          <div class="card sec"><div class="row"><h3 style="margin:0">Hàng đợi</h3><button class="g s fx" onclick="A.retry()">↻ Chạy lại nhóm lỗi</button></div><div id="cQ"><small>Chưa có hàng đợi.</small></div></div>
+          <div class="card sec"><div class="row"><h3 style="margin:0">Hàng đợi</h3><div id="qCtl"><button class="g s" id="qPauseB" onclick="A.pause()">⏸ Tạm dừng</button><button class="r s" onclick="A.stop()">■ Dừng</button></div><button class="g s fx" onclick="A.retry()">↻ Chạy lại nhóm lỗi</button><button class="g s" onclick="A.removed('all')">🚫 Kiểm tra bài bị gỡ</button></div><div id="cQ"><small>Chưa có hàng đợi.</small></div></div>
           </section>
 
           <section class="pg" id="pg-hist"><div class="card slim" id="hCmpC"><div class="seg" id="hCs"></div><div id="hCmp"></div></div><div class="card slim"><div id="hK"></div>
@@ -732,7 +738,7 @@ jobs:
           const QUICK=['Dạ em chào anh/chị ạ, em hỗ trợ mình ngay ạ.','Anh/chị cho em xin số điện thoại/Zalo để tư vấn nhanh nhé ạ.','Dạ em gửi thông tin và báo giá cho mình ngay ạ.','Cảm ơn anh/chị đã quan tâm ạ!'];
           let S={groups:[],trash:[],hist:[],eng:{},camps:[],ledger:[],set:{skipOk:true,bg:true,showFb:false,theme:'auto',j1:15,j2:30,f:'Tất cả',s:'Thành viên ↓'},acc:null,log:[],camp:null};
           let SEL=new Set(),TSEL=new Set(),FR=[],FSEL=new Set(),CSEL=new Set(),QUEUE=[],lastRes='',shownN=80;
-          const T={busy:false,stop:false,name:'',done:0,total:0,t0:0,msg:'',fb:false};
+          const T={busy:false,stop:false,pause:false,held:false,canPause:false,frac:0,name:'',done:0,total:0,t0:0,msg:'',fb:false};
           const now=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())};
           let svT=null;function sv(){clearTimeout(svT);svT=setTimeout(async()=>{const v=JSON.stringify(S);try{if(Br())await Br().save({key:KEY,value:v});else localStorage.setItem(KEY,v)}catch(e){try{localStorage.setItem(KEY,v)}catch(_){}}},1500)}
           function L(m){S.log.push(now().slice(11)+' '+m);S.log=S.log.slice(-200);if($('#pg-acc').classList.contains('on'))$('#lg').textContent=S.log.slice(-70).join('\n');sv()}
@@ -755,7 +761,7 @@ jobs:
           function spin(t){let o=t;for(let i=0;i<100;i++){const m=o.match(/\{([^{}]+)\}/);if(!m)break;const c=m[1].split('|').map(x=>x.trim()).filter(Boolean);o=o.slice(0,m.index)+(c.length?c[Math.floor(Math.random()*c.length)]:m[0])+o.slice(m.index+m[0].length)}return o}
           function pickContent(raw){const b=String(raw||'').split(/\n\s*---+\s*\n/).map(x=>x.trim()).filter(Boolean);return b.length?spin(b[Math.floor(Math.random()*b.length)]):''}
           /* ---------- chạy trong trang Facebook (stringify, không phụ thuộc biến ngoài) ---------- */
-          function helperFactory(){const A={sl:ms=>new Promise(r=>setTimeout(r,ms)),vis:e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length),
+          function helperFactory(){const A={st:(m,p)=>{try{window.__AST=JSON.stringify({m:m,p:p})}catch(_){}},sl:ms=>new Promise(r=>setTimeout(r,ms)),vis:e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length),
            find(rx,sel,top,root){const out=[];for(const e of (root||document).querySelectorAll(sel||'[role=button],button,a[role=button],[role=menuitem],[role=option],[role=tab]')){if(!A.vis(e))continue;let hit=false;for(const x of[e.getAttribute('aria-label'),e.innerText]){const t=((x||'')+'').trim();if(t&&t.length<=90&&rx.test(t)){hit=true;break}}if(!hit)continue;if(top&&e.getBoundingClientRect().top>top)continue;out.push(e)}return A.best(out)},
           strong(e){return /^(button|menuitem|option|tab|radio|checkbox|link)$/.test((e.getAttribute('role')||'').toLowerCase())||e.tagName==='BUTTON'||e.tagName==='A'},
           best(l){if(!l.length)return null;const s=l.filter(A.strong);if(s.length)return s[0];return l.slice().sort((a,b)=>{const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();return ra.width*ra.height-rb.width*rb.height})[0]},
@@ -808,14 +814,14 @@ jobs:
            if(!await A.click(/^(Tham gia nhóm|Join group|Tham gia|Join)$/,7000,null,900))return'KHÔNG THẤY NÚT';await A.sl(2500);if(A.blocked())return'BỊ CHẶN';
            const d=document.querySelector('[role=dialog]');if(d&&d.querySelector('textarea,input,[role=radio],[role=checkbox]')){await A.click(/^(Đóng|Close)$/,1500);return'CẦN MỞ THỦ CÔNG'}
            return A.find(/(Hủy yêu cầu|Cancel request|Đã gửi yêu cầu|Requested)/,0,900)?'ĐÃ GỬI YÊU CẦU':A.find(/^(Đã tham gia|Joined)$/,0,900)?'ĐÃ THAM GIA':'ĐÃ GỬI YÊU CẦU'}
-          async function pg_post(A,o){if(A.blocked())return{r:'BỊ CHẶN'};
+          async function pg_post(A,o){A.st('Đã mở nhóm — kiểm tra quyền đăng',12);if(A.blocked())return{r:'BỊ CHẶN'};
           for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(900);
           const notJoined=!!A.find(/^(Tham gia nhóm|Join group)$/,0,900);if(notJoined&&!o.any)return{r:'CHƯA VÀO NHÓM'};
-          window.scrollTo(0,0);const before=A.postLinks();
+          window.scrollTo(0,0);A.st('Đang mở khung soạn bài',22);const before=A.postLinks();
           let dg=null,clicked=false;
           for(let at=0;at<3&&!dg;at++){window.scrollTo(0,0);await A.sl(500);const okc=await A.click(/^(Bạn viết gì đi|Bạn đang nghĩ gì|Viết gì đó|Tạo bài viết|Viết bài|Đăng gì đó|Write something|What.s on your mind|Create (a public )?post)/i,at?4000:10000,'[role=button],div,span');if(!okc){if(!clicked)return{r:'KHÔNG THẤY Ô SOẠN',d:(notJoined?'nhóm chưa tham gia, không có ô soạn • ':'')+A.labels(24)};break}clicked=true;for(let i=0;i<10&&!dg;i++){await A.sl(500);dg=A.dlg()}}
           if(!dg)return{r:'KHÔNG MỞ ĐƯỢC KHUNG SOẠN',d:A.labels(24)};
-          let ed=null;for(let i=0;i<12&&!ed;i++){dg=A.dlg()||dg;ed=A.editor(dg);if(!ed)await A.sl(500)}
+          A.st('Đang nhập nội dung',38);let ed=null;for(let i=0;i<12&&!ed;i++){dg=A.dlg()||dg;ed=A.editor(dg);if(!ed)await A.sl(500)}
           if(!ed)return{r:'KHÔNG THẤY KHUNG GÕ',d:A.labels(24)};
           const PV='[aria-label*="Xóa bản xem trước"],[aria-label*="Remove preview"],[aria-label="Xóa tệp đính kèm"],[aria-label="Remove attachment"]';
           const mh=()=>{let m=dg.scrollHeight||0;dg.querySelectorAll('div').forEach(d=>{if(d.scrollHeight>m)m=d.scrollHeight});return m};const im=()=>[...dg.querySelectorAll('img')].filter(x=>A.vis(x)&&x.getBoundingClientRect().width>80).length;
@@ -823,15 +829,15 @@ jobs:
           if(!await A.fill(ed,o.text))return{r:'KHÔNG NHẬP ĐƯỢC NỘI DUNG',d:'khung gõ không nhận chữ'};
           await A.sl(1500+(o.prev||0)*1000);dg=A.dlg()||dg;ed=A.editor(dg)||ed;
           let hid='';
-          if(o.hide&&o.hurl){let ready=hasPv();for(let i=0;i<34&&!ready;i++){await A.sl(600);dg=A.dlg()||dg;ready=hasPv()}
+          if(o.hide&&o.hurl){A.st('Đang ẩn link (chờ khung xem trước rồi xóa link)',52);let ready=hasPv();for(let i=0;i<34&&!ready;i++){await A.sl(600);dg=A.dlg()||dg;ready=hasPv()}
           if(!ready){hid='giữ link (Facebook chưa hiện khung xem trước)'}else{await A.sl(700);let done=false;const lg=[];
           for(const m of[0,1,2]){dg=A.dlg()||dg;ed=A.editor(dg)||ed;
           const okd=await A.delUrl(ed,o.hurl,m);
           if(okd){await A.sl(2200);const alive=hasPv(),gone=!A.has(ed,o.hurl);lg.push('cách'+(m+1)+':'+(gone?'xóa':'chưa xóa')+'/'+(alive?'còn khung':'mất khung'));if(gone&&alive){done=true;break}}else{lg.push('cách'+(m+1)+':không tìm thấy link')}
           dg=A.dlg()||dg;ed=A.editor(dg)||ed;await A.fill(ed,o.text);for(let k=0;k<30&&!hasPv();k++)await A.sl(400);await A.sl(600)}
           hid=done?'đã ẩn link, giữ khung xem trước':'giữ link ('+lg.join(' • ')+')'}}
-          const sub=await A.submit(dg,24000);if(!sub.ok)return{r:'KHÔNG THẤY NÚT ĐĂNG',d:sub.d};
-          await A.sl(1200);const t0=Date.now(),maxw=(o.wait||6)*1000+14000;let closed=false;
+          A.st('Đang bấm nút Đăng',68);const sub=await A.submit(dg,24000);if(!sub.ok)return{r:'KHÔNG THẤY NÚT ĐĂNG',d:sub.d};
+          A.st('Đang chờ Facebook đăng bài',78);await A.sl(1200);const t0=Date.now(),maxw=(o.wait||6)*1000+14000;let closed=false;
           const gone=()=>!document.contains(dg)||!A.vis(dg)||!A.dlg()||!A.editor(dg);
           while(Date.now()-t0<maxw){await A.sl(700);if(A.blocked())return{r:'BỊ CHẶN'};if(gone()){closed=true;break}}
           const probe=A.norm(o.pk||'').slice(0,24);let seen='';
@@ -843,7 +849,7 @@ jobs:
           const findArt=()=>[...document.querySelectorAll('[role=article]')].slice(0,8).find(a=>KEY&&A.norm(a.innerText||'').includes(KEY));
           const imE=d=>[...d.querySelectorAll('img')].filter(x=>A.vis(x)&&x.getBoundingClientRect().width>80).length;
           let ehid='';
-          if(o.hide&&o.hurl&&!/^đã ẩn link/.test(hid)){try{
+          if(o.hide&&o.hurl&&!/^đã ẩn link/.test(hid)){A.st('Đang sửa bài để ẩn link',86);try{
           let art=null;for(let i=0;i<6&&!art;i++){art=findArt();if(!art)await A.sl(1500)}
           if(!art){ehid='sửa bài: không thấy bài vừa đăng'}else{
           const mb=A.find(/^(Hành động đối với bài viết này|Actions for this post)/i,null,0,art);
@@ -863,10 +869,10 @@ jobs:
           else if(!await A.dclick(/^(Lưu|Save)$/i,6000)){ehid='sửa bài: không thấy nút Lưu • '+A.labels(14)}
           else{await A.sl(4500);ehid=findArt()?'sửa bài: chưa thấy link biến mất':'đã sửa bài để ẩn link [ảnh '+iE1+'/'+iE2+']'}
           }}}}}}catch(e){ehid='sửa bài lỗi: '+(e&&e.message||e)}}
-          const b=(document.body.innerText||'').slice(0,5000);let link='';
+          const b=(document.body.innerText||'').slice(0,5000);let link='';A.st('Đang lấy link bài đăng',95);
           for(let i=0;i<6&&!link;i++){link=A.findNew(before,probe);if(!link)await A.sl(1500)}
           return{r:/(đang chờ|chờ phê duyệt|pending|sẽ hiển thị sau khi|admin.*approve)/i.test(b)?'CHỜ DUYỆT':'OK',link,d:'đã bấm '+sub.d+(hid?' • '+hid:'')+(ehid?' • '+ehid:'')+(seen?' • '+seen:'')}}
-          async function pg_share(A,o){if(A.blocked())return{r:'BỊ CHẶN'};
+          async function pg_share(A,o){A.st('Đang bấm Chia sẻ → nhóm',30);if(A.blocked())return{r:'BỊ CHẶN'};
           for(let i=0;i<12&&!document.querySelector('[role=article]');i++)await A.sl(600);window.scrollTo(0,0);await A.sl(400);
           const RXS=/^(Chia sẻ|Share|Gửi nội dung này cho bạn bè hoặc đăng lên trang cá nhân của bạn\.?|Send this to friends or post it on your profile\.?)$/i,RXG=/^(Nhóm|Groups?|Chia sẻ lên nhóm|Chia sẻ vào nhóm|Chia sẻ trong nhóm|Share to a group|Share to group|Share to groups|Share in a group)/i;
           let sh=false;{const ds=[...document.querySelectorAll('[role=dialog]')].filter(A.vis);if(ds.length)sh=await A.click(RXS,4000,null,0,ds[ds.length-1])}if(!sh)sh=await A.click(RXS,9000);if(!sh)return{r:'KHÔNG THẤY NÚT CHIA SẺ',d:A.labels(25)};await A.sl(1800);
@@ -907,6 +913,32 @@ jobs:
           return{likes,comments,shares,views,ok:all.length>300,v:true,cm,rx,pt:tx.replace(/\s+/g,' ').slice(0,140),d:all.slice(0,120).replace(/\s+/g,' ')}}
           /* ---------- điều khiển trình duyệt nhúng ---------- */
           const stopped=()=>T.stop;
+          async function pg_removed(A,o){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(2600);
+          if(!/my_removed_content/.test(location.href))return{r:'KHÔNG VÀO ĐƯỢC',d:location.pathname.slice(0,60)};
+          for(let i=0;i<4;i++){window.scrollTo(0,document.body.scrollHeight);await A.sl(900)}
+          const main=document.querySelector('[role=main]')||document.body;
+          const arts=[...main.querySelectorAll('[role=article]')].map(a=>(a.innerText||'').replace(/\s+/g,' ').trim()).filter(t=>t.length>8);
+          const body=(main.innerText||'').replace(/\s+/g,' ').trim();
+          const empty=/(không có (nội dung|bài viết)|chưa có (nội dung|bài viết)|no (removed )?(content|posts)|nothing to show|không có gì để hiển thị)/i.test(body);
+          const items=arts.length?arts:(empty?[]:[]);const nb=A.norm(body);
+          const hits=[];for(const p of (o.probes||[])){const k=A.norm(p||'').slice(0,28);if(k.length>=10&&(items.some(t=>A.norm(t).includes(k))||nb.includes(k)))hits.push(p)}
+          return{r:hits.length?'BỊ GỠ':items.length?'CÓ BÀI BỊ GỠ KHÁC':'SẠCH',n:items.length,hits:hits,sample:(items[0]||'').slice(0,140)}}
+          async function pg_admins(A){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(2800);
+          for(let i=0;i<5;i++){window.scrollTo(0,document.body.scrollHeight);await A.sl(900)}
+          const main=document.querySelector('[role=main]')||document.body;const out=[],seen=new Set();let role='';
+          const ADM=/^(quản trị viên|admins?|admin)$/i,MOD=/^(người kiểm duyệt|người điều hành|moderators?|quản trị viên và người kiểm duyệt)$/i;
+          const BAD=/^(groups|watch|friends|pages|marketplace|gaming|events|reel|reels|stories|help|policies|settings|notifications|bookmarks|messages|login|ads|business|privacy|photo|video|videos|share|hashtag|search|r\.php|legal|about|careers|developers|directory|latest|professional_dashboard|members|people|photos)\b/i;
+          const walker=document.createTreeWalker(main,NodeFilter.SHOW_ELEMENT);let el;
+          while(el=walker.nextNode()){
+           if(/^H[1-6]$/.test(el.tagName)||el.getAttribute('role')=='heading'||(el.tagName=='SPAN'&&el.children.length==0)){const t=(el.innerText||'').replace(/\s+/g,' ').trim();if(t&&t.length<60){const m=t.replace(/\s*[·•]?\s*\d+\s*$/,'').trim();if(ADM.test(m))role='Quản trị viên';else if(MOD.test(m))role='Người kiểm duyệt';else if(/^(thành viên|members?|bạn bè|friends|người mới tham gia|new to the group|thành viên chung|common)/i.test(m))role=''}}
+           if(el.tagName!='A'||!role)continue;
+           const h=el.href||'';let url='',key='';let m=h.match(/^https:\/\/www\.facebook\.com\/profile\.php\?id=(\d+)/);
+           if(m){key='id'+m[1];url='https://www.facebook.com/profile.php?id='+m[1]}
+           else{m=h.match(/^https:\/\/www\.facebook\.com\/groups\/\d+\/user\/(\d+)\/?/);if(m){key='id'+m[1];url='https://www.facebook.com/profile.php?id='+m[1]}
+           else{m=h.match(/^https:\/\/www\.facebook\.com\/([A-Za-z0-9.\-]{3,})\/?(?:\?.*)?$/);if(!m||BAD.test(m[1]))continue;key=m[1].toLowerCase();url='https://www.facebook.com/'+m[1]}}
+           let name=(el.getAttribute('aria-label')||el.innerText||'').split('\n')[0].trim();if(!name||name.length>70||/^(xem|view|nhắn tin|message|thêm bạn|add friend|theo dõi|follow)/i.test(name))continue;
+           if(seen.has(key))continue;seen.add(key);out.push({name:name,url:url,role:role})}
+          return{r:out.length?'OK':'KHÔNG THẤY',list:out.slice(0,40),url:location.pathname.slice(0,80)}}
           async function pg_check(A){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(1800);
           const meta=q=>{const e=document.querySelector(q);return e?(e.getAttribute('content')||''):''};
           const body=(document.body?document.body.innerText:'').slice(0,6000);const art=document.querySelector('[role=article]');
@@ -919,27 +951,30 @@ jobs:
           const hasShare=!!A.find(/^(Chia sẻ|Share|Gửi nội dung này cho bạn bè hoặc đăng lên trang cá nhân của bạn\.?|Send this to friends or post it on your profile\.?)$/i);
           return{href:location.href,gone,login,title,author,desc,hasArticle:!!art,hasShare}}
           async function sl(ms){const end=Date.now()+ms;while(Date.now()<end&&!T.stop)await W(Math.min(250,end-Date.now()));}
+          async function holdPause(q){const pv=q&&q.st;T.held=true;if(q)q.st='TẠM DỪNG';R.queue();prog('⏸ Đã tạm dừng — bấm ▶ Tiếp tục để chạy nhóm kế tiếp',null,null,true);tick();try{await Br().setBarTitle({title:'Tạm dừng'})}catch(e){}
+           while(T.pause&&!T.stop)await W(350);T.held=false;if(q&&!T.stop)q.st=pv;R.queue();tick()}
           async function waitLoad(max=45000){await W(250);const end=Date.now()+max;while(Date.now()<end&&!T.stop){const s=await Br().state();if(!s.loading)return s;await W(400)}return await Br().state()}
           async function nav(url,settle=1600,mode){await Br().gotoUrl({url,mode});await waitLoad();await sl(settle)}
           async function run(fn,arg,timeout=90){const code=HELP+'return await ('+fn.toString()+')(A,'+JSON.stringify(arg===undefined?null:arg)+');';const r=await Br().exec({code,timeout});if(r.error)throw new Error(r.error);return r.value===''?null:JSON.parse(r.value)}
+          function stageWatch(q,gi,n){let on=true;(async()=>{while(on&&!T.stop){await W(1100);if(!on)break;try{const r=await Br().exec({code:"try{return JSON.parse(window.__AST||'null')}catch(e){return null}",timeout:4});const v=r&&r.value?JSON.parse(r.value):null;if(v&&v.m&&on){q.stage=v.m;q.pct=v.p;T.frac=Math.max(.05,v.p/100);R.queue();prog(q.name+' • '+v.m+' • '+v.p+'%',gi,n)}}catch(e){}}})();return()=>{on=false}}
           async function needLogin(){const s=await Br().session();S.acc=Object.assign(S.acc||{},{ok:!!s.loggedIn,uid:s.uid||'',t:Date.now()});sv();return !s.loggedIn}
           /* ---------- Task Center ---------- */
           async function task(name,fn,opt={}){if(T.busy){toast('Đang chạy tác vụ khác');return false}
            if(!Br()){alert('Thiếu plugin trình duyệt AutuBrowser trong bản build này.');return false}
-           M.ready=false;Object.assign(T,{busy:true,stop:false,name,done:0,total:opt.total||0,t0:Date.now(),msg:'Đang khởi động...',fb:false});tick();let ok=true;
+           M.ready=false;Object.assign(T,{busy:true,stop:false,pause:false,held:false,frac:0,canPause:!!opt.pause,name,done:0,total:opt.total||0,t0:Date.now(),msg:'Đang khởi động...',fb:false});tick();let ok=true;
            try{if(await needLogin())throw new Error('Chưa đăng nhập Facebook — vào Tài khoản → Đăng nhập.');
             await Br().keepAlive({on:!!S.set.bg});await Br().openWeb({url:'about:blank',mode:'desktop',show:!!S.set.showFb,light:S.set.light!==false});T.fb=!!S.set.showFb;
             await fn()}catch(e){ok=false;L('Lỗi: '+(e.message||e));lastRes='Lỗi: '+(e.message||e)}
-           finally{try{await Br().closeWeb()}catch(e){}try{await Br().keepAlive({on:false})}catch(e){}if(M.auto){try{Br().keepAlive({on:true})}catch(e){}}prog(lastRes||T.msg,null,null,true);T.busy=false;T.fb=false;L('Hoàn tất: '+name);sv();R.all();tick()}return ok}
+           finally{try{await Br().closeWeb()}catch(e){}try{await Br().keepAlive({on:false})}catch(e){}if(M.auto){try{Br().keepAlive({on:true})}catch(e){}}prog(lastRes||T.msg,null,null,true);T.busy=false;T.fb=false;T.pause=false;T.held=false;T.frac=0;L('Hoàn tất: '+name);sv();R.all();tick()}return ok}
           const _c={};const setT=(id,v)=>{if(_c[id]!==v){_c[id]=v;const e=$('#'+id);if(e)e.textContent=v}};
           const _rt={};function RT(k,ms){if(_rt[k])return;_rt[k]=setTimeout(()=>{_rt[k]=0;const pg=$('#pg-'+k);if(pg&&!pg.classList.contains('on'))return;R[k]()},ms||600)}
           function tick(){const b=T.busy;$('#tcb').style.display=b?'block':'none';document.body.classList.toggle('busy',b);
-          if(b){const pct=T.total?Math.round(T.done/T.total*100):8,e=Math.floor((Date.now()-T.t0)/1000),mm=String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
-          setT('tcT','TASK CENTER • ĐANG CHẠY');setT('tcN',T.name+(T.msg?' — '+T.msg:''));$('#tcB').style.width=pct+'%';setT('tcP',pct+'%');
-          setT('tcS','Trạng thái: đang chạy • Tiến độ '+pct+'% • Thời gian '+mm);setT('tcR','Kết quả gần nhất: '+(lastRes||'chưa có kết quả'));setT('bFb',T.fb?'Ẩn FB':'Hiện FB')}
+          if(b){const pct=T.total?Math.round(Math.min(T.done+(T.frac||0),T.total)/T.total*100):8,e=Math.floor((Date.now()-T.t0)/1000),mm=String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
+          const stt=T.held?'ĐÃ TẠM DỪNG':T.pause?'ĐANG CHẠY • SẼ TẠM DỪNG SAU BƯỚC NÀY':'ĐANG CHẠY';setT('tcT','TASK CENTER • '+stt);setT('bPause',T.pause?'▶ Tiếp tục':'⏸ Tạm dừng');setT('qPauseB',T.pause?'▶ Tiếp tục':'⏸ Tạm dừng');{const d=T.canPause?'':'none';const e1=$('#bPause'),e2=$('#qPauseB');if(e1)e1.style.display=d;if(e2)e2.style.display=d}setT('tcN',T.name+(T.msg?' — '+T.msg:''));$('#tcB').style.width=pct+'%';setT('tcP',pct+'%');
+          setT('tcS','Trạng thái: '+stt.toLowerCase()+' • Tiến độ '+pct+'% • Thời gian '+mm);setT('tcR','Kết quả gần nhất: '+(lastRes||'chưa có kết quả'));setT('bFb',T.fb?'Ẩn FB':'Hiện FB')}
           const a=S.acc;setT('chip',a?(a.ok?'● FB đã đăng nhập':'○ FB chưa đăng nhập'):'○ FB chưa kiểm tra')}
           setInterval(()=>{if(T.busy&&!document.hidden)tick()},2000);
-          let _pg=0;function prog(msg,done,total,force){T.msg=msg;if(done!=null)T.done=done;if(total!=null)T.total=total;const n=Date.now();if(!force&&n-_pg<250)return;_pg=n;setT('gProg',msg);setT('gCnt',(T.done||0)+'/'+(T.total||0));$('#gBar').style.width=(T.total?Math.round(T.done/T.total*100):T.busy?8:0)+'%';tick()}
+          let _pg=0;function prog(msg,done,total,force){T.msg=msg;if(done!=null)T.done=done;if(total!=null)T.total=total;const n=Date.now();if(!force&&n-_pg<250)return;_pg=n;setT('gProg',msg);setT('gCnt',(T.done||0)+'/'+(T.total||0));$('#gBar').style.width=(T.total?Math.round(Math.min(T.done+(T.frac||0),T.total)/T.total*100):T.busy?8:0)+'%';tick()}
           /* ---------- đọc chi tiết nhóm (port _group_detail) ---------- */
           function parseDetail(d,url){const body=d.body||'',bl=body.toLowerCase();
            if(['log in to facebook','đăng nhập facebook','log into facebook','you must log in','bạn phải đăng nhập'].some(x=>bl.includes(x)))throw new Error('Phiên Facebook chưa đăng nhập hoặc đã hết hạn.');
@@ -1024,21 +1059,22 @@ jobs:
            let gs=campGroups(c);if(!gs.length){const d=campDiag(c);return alert('Không có group nào vượt qua bộ lọc.\n\nChưa xác minh tham gia: '+d.not_joined+'\nChưa quét OK: '+d.not_scanned+'\nChưa xác minh số TV: '+d.count_unverified+'\nDưới ngưỡng: '+d.under_min+'\nTrên ngưỡng: '+d.over_max)}
            let skippedDup=0;
            const nj0=gs.filter(g=>!(g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified)).length;
+          const rmL=gs.filter(g=>rmGet(gk(g.url))&&rmGet(gk(g.url)).st=='BỊ GỠ');if(rmL.length&&!confirm('🚫 '+rmL.length+' nhóm ĐÃ GỠ BÀI của bạn lần trước:\n'+rmL.slice(0,12).map(g=>'• '+g.name).join('\n')+(rmL.length>12?'\n… và '+(rmL.length-12)+' nhóm khác':'')+'\n\nVẫn đăng vào các nhóm này? (Bấm Hủy để quay lại bỏ chọn chúng)'))return;
           if(!confirm((share?'Chia sẻ':'Đăng bài')+' vào '+gs.length+' nhóm'+(skippedDup?' (bỏ qua '+skippedDup+' nhóm đã chia sẻ)':'')+(nj0?'\n⚠ '+nj0+' nhóm CHƯA tham gia/chưa xác minh — vẫn thử đăng, nhóm nào không có ô soạn sẽ báo ĐỎ.':'')+'?\nNhóm nhiều thành viên chạy trước. Nghỉ '+c.d1+'-'+c.d2+'s/nhóm.'))return;
            rememberCamp(c);QUEUE=gs.map(g=>({g:gk(g.url),name:g.name,st:'CHỜ',note:''}));R.queue();const name=(share?'Chia sẻ ':'Đăng bài ')+gs.length+' nhóm';
            return task(name,async()=>{let ok=0,bad=0;const stat={};
-            for(let i=0;i<gs.length&&!T.stop;i++){const g=gs[i],q=QUEUE[i];q.st='ĐANG CHẠY';R.queue();prog(g.name,i,gs.length);let r='LỖI',link='',err='',dbg='';const njoin=!(g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified);
-             G_CAP='';const why=campReason(g,c);if(why){r='SKIPPED_FILTER';err='BỘ LỌC: '+why}else{
-              try{const t0=Date.now();let o;const linkPost=async()=>{const cap=pickContent(c.text);G_CAP=cap;await nav(g.url,2200);return await run(pg_post,{text:share?((cap?cap+'\n\n':'')+c.url):cap,pk:cap,wait:c.wait,prev:share&&c.hide===false?6:0,hide:share&&c.hide!==false,hurl:share?c.url:'',any:true},160)};
+            for(let i=0;i<gs.length&&!T.stop;i++){const g=gs[i],q=QUEUE[i];if(T.pause)await holdPause(q);if(T.stop)break;q.st='ĐANG CHẠY';q.stage='Đang mở nhóm';q.pct=5;T.frac=.05;R.queue();prog(g.name,i,gs.length);let r='LỖI',link='',err='',dbg='';const njoin=!(g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified);
+             G_CAP='';let stopW=()=>{};const why=campReason(g,c);if(why){r='SKIPPED_FILTER';err='BỘ LỌC: '+why}else{
+              stopW=stageWatch(q,i,gs.length);try{const t0=Date.now();let o;const linkPost=async()=>{const cap=pickContent(c.text);G_CAP=cap;q.stage='Đang mở nhóm';q.pct=6;R.queue();await nav(g.url,2200);q.stage='Đã mở nhóm';q.pct=10;T.frac=.1;R.queue();return await run(pg_post,{text:share?((cap?cap+'\n\n':'')+c.url):cap,pk:cap,wait:c.wait,prev:share&&c.hide===false?6:0,hide:share&&c.hide!==false,hurl:share?c.url:'',any:true},160)};
           if(share&&c.meth=='native'){await nav(c.url,3000);o=await run(pg_share,{name:g.name,caption:pickContent(c.text)},120);if(!/^(OK|CHỜ DUYỆT|BỊ CHẶN)$/.test(o.r)){L('Nút Chia sẻ lỗi ('+o.r+') → thử chia sẻ bằng link');const o2=await linkPost();o2.d='[nút Chia sẻ: '+o.r+'] '+(o2.d||'');o=o2}}else{o=await linkPost()}
-          r=o.r;dbg=o.d||'';link=o.link||'';if(njoin)dbg='⚠ CHƯA THAM GIA nhóm — vẫn thử đăng'+(dbg?' • '+dbg:'')
-               if(r=='OK'||r=='CHỜ DUYỆT'||r=='CHƯA XÁC NHẬN'){ok++;if(r!='OK')err=r+(dbg?' • '+dbg:'')}else{bad++;err=r+(dbg?' • '+dbg:'')}}catch(e){bad++;err=e.message;r='LỖI'}}
-             q.st=r=='OK'?'THÀNH CÔNG':r=='CHỜ DUYỆT'?'CHỜ DUYỆT':r=='CHƯA XÁC NHẬN'?'CHƯA XÁC NHẬN':r=='SKIPPED_FILTER'?'BỎ QUA':'LỖI';q.note=err||(njoin&&r!='SKIPPED_FILTER'?'⚠ chưa tham gia nhóm — vẫn thử đăng':'');q.link=link||'';q.gurl=g.url;R.queue();L((share?'Chia sẻ':'Đăng')+': '+g.name+' → '+r);
+          stopW();r=o.r;dbg=o.d||'';link=o.link||'';if(njoin)dbg='⚠ CHƯA THAM GIA nhóm — vẫn thử đăng'+(dbg?' • '+dbg:'')
+               if(r=='OK'||r=='CHỜ DUYỆT'||r=='CHƯA XÁC NHẬN'){ok++;if(r!='OK')err=r+(dbg?' • '+dbg:'')}else{bad++;err=r+(dbg?' • '+dbg:'')}}catch(e){stopW();bad++;err=e.message;r='LỖI'}}
+             stopW();q.stage='';q.pct=100;T.frac=0;q.st=r=='OK'?'THÀNH CÔNG':r=='CHỜ DUYỆT'?'CHỜ DUYỆT':r=='CHƯA XÁC NHẬN'?'CHƯA XÁC NHẬN':r=='SKIPPED_FILTER'?'BỎ QUA':'LỖI';q.note=err||(njoin&&r!='SKIPPED_FILTER'?'⚠ chưa tham gia nhóm — vẫn thử đăng':'');q.link=link||'';q.gurl=g.url;R.queue();L((share?'Chia sẻ':'Đăng')+': '+g.name+' → '+r);
              if(/^(KHÔNG THẤY Ô SOẠN|KHÔNG MỞ ĐƯỢC KHUNG SOẠN|KHÔNG THẤY KHUNG GÕ|CHƯA VÀO NHÓM|KHÔNG THẤY NÚT ĐĂNG)$/.test(r)){g.post_block={r,t:now(),nj:njoin}}else if(r=='OK'||r=='CHỜ DUYỆT'||r=='CHƯA XÁC NHẬN'){delete g.post_block}
           H(share?'Chia sẻ':'Đăng bài','',g.name,r,err||dbg||'',link,g.url,share?c.url:'',G_CAP);prog(g.name+' → '+r,i+1,gs.length,true);sv();RT('groups');
              if(r=='BỊ CHẶN'){L('Facebook chặn tính năng — DỪNG, nghỉ vài giờ');T.stop=true;break}
-             if(i<gs.length-1&&!T.stop&&r!='SKIPPED_FILTER'){try{await Br().gotoUrl({url:'about:blank'})}catch(e){}const s=Math.round(c.d1+Math.random()*Math.max(0,c.d2-c.d1));for(let k=s;k>0&&!T.stop;k--){if(k%5==0){prog('Nghỉ '+k+'s trước nhóm kế tiếp',null,null);await Br().setBarTitle({title:'Nghỉ '+k+'s'})}await W(1000)}}}
-            lastRes=name+' • thành công '+ok+' • lỗi '+bad+(T.stop?' • đã dừng':'')},{total:gs.length})}
+             if(i<gs.length-1&&!T.stop&&r!='SKIPPED_FILTER'){try{await Br().gotoUrl({url:'about:blank'})}catch(e){}const s=Math.round(c.d1+Math.random()*Math.max(0,c.d2-c.d1));for(let k=s;k>0&&!T.stop;k--){if(T.pause)await holdPause(QUEUE[i+1]);if(k%5==0){prog('Nghỉ '+k+'s trước nhóm kế tiếp',null,null);await Br().setBarTitle({title:'Nghỉ '+k+'s'})}await W(1000)}}}
+            lastRes=name+' • thành công '+ok+' • lỗi '+bad+(T.stop?' • đã dừng':'')},{total:gs.length,pause:true})}
           function campDiag(c){const d={not_joined:0,not_scanned:0,count_unverified:0,under_min:0,over_max:0};(c.mode=='Theo thành viên'?S.groups:S.groups.filter(g=>c.sel.includes(gk(g.url)))).forEach(g=>{const r=campReason(g,c);if(r)d[r]++});return d}
           /* ---------- lịch sử / tương tác ---------- */
           let G_CAP='';
@@ -1060,6 +1096,30 @@ jobs:
           return got}
           async function verifyPosts(){const rows=pendRows();if(!rows.length)return toast('Không có bài nào thiếu link');return task('Xác minh bài + lấy link ('+rows.length+')',async()=>{const got=await verifyCore(rows);lastRes='Lấy được '+got+'/'+rows.length+' link bài'},{total:rows.length})}
           let HC='d';
+          async function findAdmins(mode){let idx=[];S.groups.forEach((g,i)=>{if(mode=='all'||SEL.has(gk(g.url)))idx.push(i)});if(!idx.length)return toast(mode=='all'?'Chưa có nhóm':'Chưa chọn nhóm nào');
+           return task('Tìm admin '+idx.length+' nhóm',async()=>{let ok=0,i=0;
+            for(const ix of idx){if(T.stop)break;while(T.pause&&!T.stop)await W(400);const g=S.groups[ix];prog(g.name,i,idx.length);let list=[];
+             for(const path of ['/members/admins','/people/admins_moderators','/members']){try{await nav(canon(g.url).replace(/\/$/,'')+path,2400);const r=await run(pg_admins,null,60);if(r&&r.list&&r.list.length){list=r.list;break}}catch(e){}}
+             if(list.length){g.admins=list;g.admins_t=now();ok++}else{g.admins_t=now();g.admins=g.admins||[];g.admins_err='Không thấy danh sách admin (nhóm riêng tư/ẩn danh sách hoặc bạn chưa vào nhóm)'}
+             i++;prog(g.name+' → '+(list.length?list.length+' admin/mod':'không thấy'),i,idx.length,true);sv();RT('groups');
+             if(i<idx.length&&!T.stop)await sl(2500+Math.random()*2500)}
+            lastRes='Tìm admin: '+ok+'/'+i+' nhóm lấy được'},{total:idx.length,pause:true})}
+          function admShow(k){const g=S.groups.find(x=>gk(x.url)==k);if(!g)return;const l=g.admins||[];
+           shB('<div class="row"><h2 style="margin:0">Admin • '+esc(g.name||'')+'</h2></div>'+(l.length?l.map(a=>'<div class="gi"><div class="gb"><b>'+esc(a.name)+'</b><small>'+esc(a.role)+'</small><div class="qb"><button class="s jb" data-u="'+esc(a.url)+'" onclick="A.openG(this.dataset.u,event)">↗ Mở trang cá nhân</button></div></div></div>').join(''):'<small>'+esc(g.admins_err||'Chưa dò admin nhóm này.')+'</small>')+'<div class="grid2" style="margin-top:8px"><button class="g s" onclick="A.admCopy(\''+esc(k)+'\')">Sao chép danh sách</button><button class="g s" onclick="$(\'#sheet\').classList.remove(\'on\')">Đóng</button></div>')}
+          const rmGet=k=>(S.removed||{})[k];
+          function rmChip(k){const r=rmGet(k);if(!r)return'';if(r.st=='BỊ GỠ')return chip('🚫 BỊ GỠ BÀI '+String(r.t).slice(5,10),'rm');if(r.st=='CÓ BÀI BỊ GỠ KHÁC')return chip('⚠ nhóm từng gỡ bài','rw');return''}
+          async function checkRemoved(mode){const days=7,cut=Date.now()-days*864e5;const rows=S.hist.filter(h=>(h.kind=='Đăng bài'||h.kind=='Chia sẻ')&&(sOK(h.status)||sPend(h.status))&&h.gurl&&Date.parse(String(h.time).replace(' ','T'))>=cut);
+           const byG={};rows.forEach(h=>{(byG[gk(h.gurl)]=byG[gk(h.gurl)]||[]).push(h)});let keys=Object.keys(byG);if(mode=='selected')keys=keys.filter(k=>SEL.has(k));
+           if(!keys.length)return toast(mode=='selected'?'Các nhóm đã chọn chưa có bài đăng nào trong 7 ngày':'Chưa có bài đăng nào trong 7 ngày để kiểm tra');
+           return task('Kiểm tra bài bị gỡ ('+keys.length+' nhóm)',async()=>{S.removed=S.removed||{};let bad=0,i=0;
+            for(const k of keys){if(T.stop)break;while(T.pause&&!T.stop)await W(400);const grp=byG[k],g0=grp[0];prog(g0.target,i,keys.length);
+             try{await nav(canon(g0.gurl).replace(/\/$/,'')+'/my_removed_content/',2600);const probes=grp.map(h=>h.txt).filter(Boolean).concat(grp.map(h=>postId(h.src||'')).filter(Boolean));
+              const r=await run(pg_removed,{probes},70);S.removed[k]={st:r.r,t:now(),n:r.n||0,sample:r.sample||''};
+              if(r.r=='BỊ GỠ'){bad++;grp.forEach(h=>{h.removed=true;h.detail=('🚫 ADMIN ĐÃ GỠ BÀI'+(h.detail?' • '+h.detail:'')).slice(0,300)});L('🚫 Bị gỡ bài: '+g0.target)}
+              else if(r.r=='SẠCH'){grp.forEach(h=>{delete h.removed})}}catch(e){L('Kiểm tra gỡ bài lỗi '+g0.target+': '+(e.message||e))}
+             i++;prog(g0.target+' → '+(S.removed[k]?S.removed[k].st:'lỗi'),i,keys.length,true);sv();RT('groups');RT('hist');
+             if(i<keys.length&&!T.stop)await sl(2500+Math.random()*2500)}
+            lastRes='Đã kiểm tra '+i+' nhóm • bị gỡ bài: '+bad;if(bad)setTimeout(()=>alert('🚫 '+bad+' nhóm ĐÃ GỠ BÀI của bạn:\n'+keys.filter(k=>rmGet(k)&&rmGet(k).st=='BỊ GỠ').map(k=>'• '+((S.groups.find(g=>gk(g.url)==k)||{}).name||k)).join('\n')+'\n\nLần đăng sau app sẽ cảnh báo các nhóm này.'),300)},{total:keys.length,pause:true})}
           function histCmp(){const el=$('#hCmp');if(!el)return;const pad=n=>String(n).padStart(2,'0'),ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
           const mon=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
           const base=new Date(),N=HC=='d'?7:6,ks=[],lb={};
@@ -1097,7 +1157,7 @@ jobs:
            const nm=r=>String(r[1].name||'').toLowerCase();if(so=='Thành viên ↓')out.sort((a,b)=>b[2]-a[2]||nm(a).localeCompare(nm(b)));else if(so=='Thành viên ↑')out.sort((a,b)=>a[2]-b[2]||nm(a).localeCompare(nm(b)));else if(so=='Tên A→Z')out.sort((a,b)=>nm(a).localeCompare(nm(b)));else if(so=='Đã tham gia trước')out.sort((a,b)=>(b[1].membership_status=='ĐÃ THAM GIA')-(a[1].membership_status=='ĐÃ THAM GIA')||b[2]-a[2]);return out}
           function swWrap(g,html){const k=esc(gk(g.url));return'<div class="sw" data-k="'+k+'"><div class="swa"><button class="r s swx" onclick="A.swAsk(this)">Xóa</button><span class="swq"><small>Xóa nhóm?</small><button class="r s" onclick="A.swYes(this)">Yes</button><button class="g s" onclick="A.swNo(this)">No</button></span></div>'+html+'</div>'}
           function gItem(g,rank,sel,onchg){const m=String(g.membership_status||'KHÔNG XÁC MINH').toUpperCase(),sc=String(g.scan_status||'').toUpperCase(),tone=g.post_block?'er':(sc=='LỖI'||sc=='CẦN ĐĂNG NHẬP')?'er':m=='KHÔNG XÁC MINH'?'uv':['OK','ĐỒNG BỘ OK'].includes(sc)?'ok':'';const n=mnum(g);
-           const td=todayMap()[gk(g.url)];return'<label class="gi '+tone+(td?' done':'')+(g.post_block?' pbk':'')+'"><input type="checkbox" '+(sel?'checked':'')+' onchange="'+onchg+'"><div class="gb"><b class="lk" data-u="'+esc(g.url)+'" onclick="A.openG(this.dataset.u,event)">'+rank+'. '+esc(g.name||'Chưa quét')+' ↗</b><small>'+(g.members||(n?n.toLocaleString('vi'):'—'))+' thành viên • '+esc(String(g.url||'').replace('https://www.facebook.com/groups/','').replace(/\/$/,''))+'</small><div class="chips">'+(td?chip('✔ HÔM NAY: '+td.t,'ok'):'')+chip(m,m=='ĐÃ THAM GIA'?'ok':m=='CHƯA THAM GIA'?'bl':'wt')+(g.post_block?chip('⛔ '+g.post_block.r,'er'):'')+((sc&&sc!='OK'&&sc!='ĐỒNG BỘ OK')?chip(g.scan_status||'Chưa quét',sc=='LỖI'?'er':''):'')+((g.approval_status||g.post_approval)?chip('DUYỆT BÀI: '+(g.approval_status||g.post_approval)):'')+(m!='ĐÃ THAM GIA'&&m!='ĐÃ GỬI YÊU CẦU'?'<button class="s jb" data-u="'+esc(g.url)+'" onclick="A.joinOne(this.dataset.u,event)">＋ Tham gia</button>':'')+'</div>'+(g.post_block?'<span class="note" style="color:var(--err);font-weight:700">⛔ Không đăng được ('+esc(g.post_block.r)+') lúc '+esc(String(g.post_block.t).slice(5,16))+(g.post_block.nj?' • nhóm chưa tham gia':'')+' → hãy tham gia nhóm hoặc bỏ chọn nhóm này.</span>':'')+((g.scan_error&&sc=='LỖI')?'<span class="note" style="color:var(--err)">'+esc(String(g.scan_error).slice(0,120))+'</span>':'')+'</div></label>'}
+           const td=todayMap()[gk(g.url)];return'<label class="gi '+tone+(td?' done':'')+(g.post_block?' pbk':'')+'"><input type="checkbox" '+(sel?'checked':'')+' onchange="'+onchg+'"><div class="gb"><b class="lk" data-u="'+esc(g.url)+'" onclick="A.openG(this.dataset.u,event)">'+rank+'. '+esc(g.name||'Chưa quét')+' ↗</b><small>'+(g.members||(n?n.toLocaleString('vi'):'—'))+' thành viên • '+esc(String(g.url||'').replace('https://www.facebook.com/groups/','').replace(/\/$/,''))+'</small><div class="chips">'+(td?chip('✔ HÔM NAY: '+td.t,'ok'):'')+chip(m,m=='ĐÃ THAM GIA'?'ok':m=='CHƯA THAM GIA'?'bl':'wt')+(g.post_block?chip('⛔ '+g.post_block.r,'er'):'')+rmChip(gk(g.url))+((sc&&sc!='OK'&&sc!='ĐỒNG BỘ OK')?chip(g.scan_status||'Chưa quét',sc=='LỖI'?'er':''):'')+((g.approval_status||g.post_approval)?chip('DUYỆT BÀI: '+(g.approval_status||g.post_approval)):'')+(m!='ĐÃ THAM GIA'&&m!='ĐÃ GỬI YÊU CẦU'?'<button class="s jb" data-u="'+esc(g.url)+'" onclick="A.joinOne(this.dataset.u,event)">＋ Tham gia</button>':'')+'</div>'+(g.admins&&g.admins.length?'<div class="adm">👤 '+g.admins.slice(0,3).map(a=>esc(a.name)).join(', ')+(g.admins.length>3?' +'+(g.admins.length-3):'')+' <button class="g s" onclick="event.preventDefault();event.stopPropagation();A.admShow(\''+esc(gk(g.url))+'\')">Xem admin</button></div>':'')+(g.post_block?'<span class="note" style="color:var(--err);font-weight:700">⛔ Không đăng được ('+esc(g.post_block.r)+') lúc '+esc(String(g.post_block.t).slice(5,16))+(g.post_block.nj?' • nhóm chưa tham gia':'')+' → hãy tham gia nhóm hoặc bỏ chọn nhóm này.</span>':'')+((g.scan_error&&sc=='LỖI')?'<span class="note" style="color:var(--err)">'+esc(String(g.scan_error).slice(0,120))+'</span>':'')+'</div></label>'}
           const R={groups(){const rows=gRows(),G=S.groups;const j=G.filter(g=>g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified).length,nj=G.filter(g=>g.membership_status=='CHƯA THAM GIA'&&g.membership_verified).length,vc=G.filter(g=>g.member_count_verified&&g.members_num>0).length;
             {const a=G.filter(g=>g.membership_status=='ĐÃ THAM GIA').length,gt=S.set.gtab||'j',sj=$('#gTj'),sn=$('#gTn');if(sj)sj.textContent=a;if(sn)sn.textContent=G.length-a;document.querySelectorAll('#gSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t==gt))}
             $('#gSum').textContent=G.length+' nhóm • hiện '+rows.length+' • đã TG '+j+' • chưa TG '+nj+' • chưa XM '+(G.length-j-nj)+' • đã xóa '+S.trash.length+(S.syncSig?' • MÃ ĐỐI CHIẾU '+S.syncSig.h+' ('+S.syncSig.n+' nhóm)':'');
@@ -1107,7 +1167,7 @@ jobs:
            camp(){const c=campRead(),gs=campGroups(c);$('#cCnt').textContent=gs.length+' nhóm sẽ chạy';{const e=$('#cRunN');if(e)e.textContent=gs.length?'• '+gs.length+' nhóm':''}const d=campDiag(c);$('#cDiag').textContent='Loại: chưa tham gia '+d.not_joined+' • chưa quét '+d.not_scanned+' • chưa rõ TV '+d.count_unverified+' • dưới ngưỡng '+d.under_min+' • trên ngưỡng '+d.over_max;
             $('#cLib').innerHTML='<option value="">— Chiến dịch mới —</option>'+S.camps.map(x=>'<option>'+esc(x.name)+'</option>').join('');$('#cLib').value=S.camp||'';},
            recent(){const el=$('#cRecent');if(!el)return;const r=S.recent||[];el.innerHTML='<option value="">— Bài / link đã dùng gần đây ('+r.length+') —</option>'+r.map((x,i)=>'<option value="'+i+'">'+esc(x.time.slice(5,16)+' • '+(x.act=='share'?'Chia sẻ: '+x.url:'Đăng: '+String(x.text||'').replace(/\s+/g,' ').slice(0,40)))+'</option>').join('');$('#cRecentInfo').textContent=S.last?('Gần nhất: '+S.last.time+' • '+(S.last.act=='share'?'chia sẻ ':'đăng bài ')+(S.last.url||'')):'Chưa có bài nào được lưu'},
-          queue(){$('#cQ').innerHTML=QUEUE.length?QUEUE.map((q,i)=>'<div class="gi"><div class="gb"><b>'+(i+1)+'. '+esc(q.name)+'</b><div class="chips">'+chip(q.st,q.st=='THÀNH CÔNG'?'ok':q.st=='LỖI'?'er':q.st=='ĐANG CHẠY'?'bl':(q.st=='CHỜ DUYỆT'||q.st=='CHƯA XÁC NHẬN')?'wt':'')+'</div>'+(q.note?'<span class="note">'+esc(q.note)+'</span>':'')+((q.link||q.gurl)?'<div class="qb">'+(q.link?'<button class="s jb" data-u="'+esc(q.link)+'" onclick="A.openPost(this.dataset.u,event)">↗ Mở bài đăng</button>':'')+(q.gurl?'<button class="g s" data-u="'+esc(q.gurl)+'" onclick="A.openG(this.dataset.u,event)">↗ Mở nhóm'+(q.link?'':' để kiểm tra')+'</button>':'')+'</div>':'')+'</div></div>').join(''):'<small>Chưa có hàng đợi.</small>'},
+          queue(){$('#cQ').innerHTML=QUEUE.length?QUEUE.map((q,i)=>'<div class="gi"><div class="gb"><b>'+(i+1)+'. '+esc(q.name)+'</b><div class="chips">'+chip(q.st,q.st=='THÀNH CÔNG'?'ok':q.st=='LỖI'?'er':(q.st=='ĐANG CHẠY'||q.st=='TẠM DỪNG')?'bl':(q.st=='CHỜ DUYỆT'||q.st=='CHƯA XÁC NHẬN')?'wt':'')+(rmChip(q.g))+'</div>'+(q.st=='ĐANG CHẠY'?'<div class="qp"><i style="width:'+(q.pct||5)+'%"></i></div><span class="qs'+(T.pause?' pz':'')+'">'+(T.pause&&!T.held?'⏸ Sẽ tạm dừng sau nhóm này • ':'')+esc(q.stage||'Đang xử lý')+' • '+(q.pct||5)+'%</span>':q.st=='TẠM DỪNG'?'<span class="qs pz">⏸ Đang chờ bạn bấm ▶ Tiếp tục</span>':'')+(q.note?'<span class="note">'+esc(q.note)+'</span>':'')+((q.link||q.gurl)?'<div class="qb">'+(q.link?'<button class="s jb" data-u="'+esc(q.link)+'" onclick="A.openPost(this.dataset.u,event)">↗ Mở bài đăng</button>':'')+(q.gurl?'<button class="g s" data-u="'+esc(q.gurl)+'" onclick="A.openG(this.dataset.u,event)">↗ Mở nhóm'+(q.link?'':' để kiểm tra')+'</button>':'')+'</div>':'')+'</div></div>').join(''):'<small>Chưa có hàng đợi.</small>'},
            hist(){const k=$('#hKind').value,q=($('#hQ').value||'').toLowerCase().trim(),per=+($('#hP').value||0),today=now().slice(0,10);
           const cut=per==1?Date.parse(today+'T00:00:00'):per?Date.now()-per*864e5:0;
           const cls=h=>sOK(h.status)?'ok':sPend(h.status)?'pe':/SKIPPED/.test(h.status)?'sk':'er';
@@ -1179,7 +1239,9 @@ jobs:
            setF(){S.set.f=$('#gF').value;S.set.s=$('#gS').value;S.set.skipOk=$('#gSkip').checked;shownN=80;sv();R.groups()},
            selAll(v){gRows().forEach(r=>v?SEL.add(gk(r[1].url)):SEL.delete(gk(r[1].url)));if(!v)SEL.clear();R.groups()},
            sync:()=>syncGroups(),scan:m=>scanGroups(m),find:()=>findGroups(),fJoin:()=>joinSelected(),fSel(){FR.forEach(g=>FSEL.add(gk(g.url)));R.find()},
-           stop(){if(!T.busy)return;T.stop=true;L('Đã yêu cầu dừng');toast('Đang dừng...')},
+           admins:m=>findAdmins(m),removed:m=>checkRemoved(m),admShow:k=>admShow(k),admCopy(k){const g=S.groups.find(x=>gk(x.url)==k);if(!g||!g.admins)return;const t=(g.name||'')+'\n'+g.admins.map(a=>a.role+': '+a.name+' - '+a.url).join('\n');try{navigator.clipboard.writeText(t);toast('Đã sao chép')}catch(e){prompt('Sao chép:',t)}},
+           pause(){if(!T.busy)return toast('Không có tác vụ đang chạy');if(!T.canPause)return toast('Tác vụ này chưa hỗ trợ tạm dừng — dùng ■ Dừng');T.pause=!T.pause;L(T.pause?'Yêu cầu tạm dừng (sau bước đang chạy)':'Tiếp tục chạy');toast(T.pause?'Sẽ tạm dừng sau khi xong nhóm đang đăng':'Tiếp tục...');tick();R.queue()},
+           stop(){if(!T.busy)return;T.stop=true;T.pause=false;L('Đã yêu cầu dừng');toast('Đang dừng...')},
            async toggleFb(){if(!T.busy)return toast('Chỉ dùng khi có tác vụ đang chạy');T.fb=!T.fb;await Br().setVisible({visible:T.fb});tick()},
            addGroup(){const v=prompt('Nhập URL hoặc ID group:');if(!v)return;const url=cleanUrl(v);if(!url)return toast('Link không hợp lệ');const k=gk(url);if(S.groups.some(g=>gk(g.url)==k))return alert('Group này đã tồn tại trong danh sách.');
             if(blockedKeys().has(k)){if(confirm('Group này đang nằm trong tab “Đã xóa”.\n\nKhôi phục lại vào danh sách?')){SEL.clear();TSEL=new Set([k]);A.restore(0)}return}
@@ -1223,7 +1285,7 @@ jobs:
            campSave(upd){let n=S.camp;if(!upd||!n){n=prompt('Tên chiến dịch:');if(!n)return}const c=campRead();c.name=n;const i=S.camps.findIndex(x=>x.name==n);if(i>=0)S.camps[i]=c;else S.camps.push(c);S.camp=n;sv();R.camp();toast('Đã lưu chiến dịch')},
            campLoad(){const n=$('#cLib').value;S.camp=n||null;const c=S.camps.find(x=>x.name==n);if(c)campWrite(c);else R.camp();sv()},
            campDel(){if(!S.camp||!confirm('Xóa chiến dịch “'+S.camp+'”?'))return;S.camps=S.camps.filter(x=>x.name!=S.camp);S.camp=null;sv();R.camp()},
-           
+
            campRun:()=>campRun(),verify:()=>verifyPosts(),engRefresh:()=>engRefresh(),
            exportHist(){const rows=[['Thời gian','Loại','Tài khoản','Mục tiêu','Trạng thái','Chi tiết','Link']].concat(S.hist.map(h=>[h.time,h.kind,h.acc,h.target,h.status,h.detail,h.link]));const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
             if(navigator.share){navigator.share({title:'Lịch sử FACEBOOK AUTU',text:csv}).catch(()=>{})}else if(navigator.clipboard){navigator.clipboard.writeText(csv);toast('Đã copy CSV')}},
