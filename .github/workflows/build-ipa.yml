@@ -956,10 +956,12 @@ jobs:
           /* ---------- điều khiển trình duyệt nhúng ---------- */
           const stopped=()=>T.stop;
           async function pg_mine(A){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(2600);
-          for(let i=0;i<3;i++){window.scrollTo(0,document.body.scrollHeight);await A.sl(900)}
           const main=document.querySelector('[role=main]')||document.body,RX=/(https:\/\/www\.facebook\.com\/groups\/[^/?#]+\/(?:posts|permalink)\/\d+)/;
-          const arts=[...main.querySelectorAll('[role=article]')].slice(0,30).map(a=>{let l='';for(const x of a.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]')){const m=x.href.match(RX);if(m){l=m[1];break}}return{l:l,t:(a.innerText||'').replace(/\s+/g,' ').slice(0,1200),h:[...a.querySelectorAll('a[href]')].slice(0,40).map(x=>x.href).join(' ').slice(0,3000)}});
-          return{arts:arts,url:location.pathname.slice(0,100),full:(main.innerText||'').replace(/\s+/g,' ').slice(0,30000)}}
+          const arts=[],seenK=new Set();let full='';
+          const snap=()=>{for(const a of main.querySelectorAll('[role=article]')){const t=(a.innerText||'').replace(/\s+/g,' ').slice(0,1200);if(t.length<15)continue;let l='';for(const x of a.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]')){const m=x.href.match(RX);if(m){l=m[1];break}}const k=l||t.slice(0,160);if(seenK.has(k))continue;seenK.add(k);arts.push({l:l,t:t,h:[...a.querySelectorAll('a[href]')].slice(0,40).map(x=>x.href).join(' ').slice(0,3000)})}const ft=(main.innerText||'').replace(/\s+/g,' ');if(ft.length>full.length)full=ft};
+          window.scrollTo(0,0);await A.sl(500);snap();
+          for(let i=0;i<5&&arts.length<40;i++){window.scrollBy(0,Math.round(window.innerHeight*0.8));await A.sl(1100);snap()}
+          return{arts:arts.slice(0,40),url:location.pathname.slice(0,100),full:full.slice(0,30000)}}
           async function pg_removed(A,o){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(2600);
           if(!/my_removed_content/.test(location.href))return{r:'KHÔNG VÀO ĐƯỢC',d:location.pathname.slice(0,60)};
           for(let i=0;i<4;i++){window.scrollTo(0,document.body.scrollHeight);await A.sl(900)}
@@ -1153,10 +1155,10 @@ jobs:
            const match=(h,pg,used,loose)=>{const key=nk(h.txt||'').slice(0,30),pid=h.src?postId(h.src):'',shr=h.kind=='Chia sẻ';let idx=-1;
             if(key.length>=10){idx=pg.arts.findIndex((a,j)=>!used.has(j)&&nk(a.t).includes(key));if(idx<0&&!loose&&nk(pg.full).includes(key))idx=-2}
             if(idx==-1&&pid){idx=pg.arts.findIndex((a,j)=>!used.has(j)&&(String(a.h||'').includes(pid)||String(a.t).includes(pid)));if(idx<0&&!loose&&String(pg.full).includes(pid))idx=-2}
-            if(idx==-1&&loose){const rec=a=>TIMER.test(String(a.t).slice(0,300));idx=pg.arts.findIndex((a,j)=>!used.has(j)&&(shr?(SHR.test(String(a.t).slice(0,300))&&rec(a)):(key.length<10&&rec(a))))}
+            if(idx==-1&&loose){const exp=Math.max(0,(Date.now()-Date.parse(String(h.time||'').replace(' ','T')))/6e4),ag=a=>{const m=String(a.t).slice(0,300).match(/(vừa xong|just now|(\d+)\s?(giây|phút|giờ|secs?|mins?|hrs?|h|m)(?![a-zà-ỹ]))/i);if(!m)return null;if(!m[2])return[0,1];const n=+m[2],u=m[3].toLowerCase();return/^(giây|sec)/.test(u)?[0,1]:/^(phút|min|m$)/.test(u)?[n,n]:[n*60,n*60+59]};let best=-1,bd=1e9;if(isFinite(exp))pg.arts.forEach((a,j)=>{if(used.has(j))return;const r=ag(a);if(!r||exp<r[0]-8||exp>r[1]+8)return;const d=Math.abs(exp-(r[0]+r[1])/2)-(shr&&SHR.test(String(a.t).slice(0,300))?5:0);if(d<bd){bd=d;best=j}});idx=best}
             if(idx>=0)used.add(idx);return idx};
            const done=(it,st,note,l)=>{it.h.status=st;it.h.detail=(note+(it.h.detail&&!/^(✔|⏳|🚫|⚠)/.test(it.h.detail)?' • '+it.h.detail:'')).slice(0,300);if(l)it.h.link=l;it.h.ver='XM';if(it.q){it.q.st=st;it.q.note=note;it.q.v=1;if(l)it.q.link=l}};
-           let i=0,nOk=0,nPend=0,nGone=0,nMiss=0;
+           let i=0,nOk=0,nPend=0,nGone=0,nMiss=0,nUn=0;
            for(const k of keys){if(T.stop)break;while(T.pause&&!T.stop)await W(400);const grp=byG[k],g0=grp[0].h,base=canon(g0.gurl).replace(/\/$/,''),gg=S.groups.find(x=>gk(x.url)==k)||{};
             prog('Xác minh bài trong: '+g0.target,i,keys.length);
             const p1=await readPage(base+'/user/'+uid+'/','/user/');const u1=new Set();let rest=[];const rdOK=p1.arts.length>0||/(chưa có bài viết|không có bài viết|no posts|nothing to show)/i.test(p1.full||'');
@@ -1167,9 +1169,9 @@ jobs:
              for(const it of rest){const ix=match(it.h,p2,u2,false);if(ix!==-1){done(it,'CHỜ DUYỆT','⏳ Đã xác minh: bài đang chờ admin duyệt');nPend++}else r2.push(it)}
              if(r2.length){const p3=await readPage(base+'/my_removed_content/','my_removed_content');const u3=new Set();
               for(const it of r2){const ix=match(it.h,p3,u3,false);if(ix!==-1){done(it,'BỊ GỠ','🚫 Admin đã gỡ bài này');it.h.removed=true;S.removed[k]={st:'BỊ GỠ',t:now(),n:1,sample:''};nGone++}
-               else if(!rdOK){done(it,'CHƯA XÁC NHẬN','⚠ Chưa đọc được danh sách bài của bạn trong nhóm — hãy bấm “Mở nhóm” để kiểm tra bằng mắt.')}else{done(it,'KHÔNG THẤY BÀI','⚠ Báo đã đăng nhưng KHÔNG thấy bài (đã kiểm tra: Bài của bạn, Chờ duyệt, Bị gỡ). Có thể nhóm chặn đăng/chưa tham gia/Facebook chặn — hãy mở nhóm kiểm tra.');nMiss++}}}}
+               else if(!rdOK){done(it,'CHƯA XÁC NHẬN','⚠ Chưa đọc được danh sách bài của bạn trong nhóm — hãy bấm “Mở nhóm” để kiểm tra bằng mắt.')}else{done(it,'THÀNH CÔNG','✔ Đã đăng: Facebook nhận lệnh, không báo lỗi, không có trong mục Bị gỡ. App chưa đối chiếu được bài trong nhóm — bấm “Mở nhóm” nếu muốn xem tận mắt.');nOk++;nUn++}}}}
             i++;prog(g0.target+' ✓',i,keys.length,true);sv();R.queue();RT('hist');RT('groups');if(i<keys.length&&!T.stop)await sl(2000+Math.random()*2000)}
-           L('Xác minh bài: có bài '+nOk+' • chờ duyệt '+nPend+' • bị gỡ '+nGone+' • KHÔNG THẤY '+nMiss);return{nOk,nPend,nGone,nMiss}}
+           L('Xác minh bài: có bài '+nOk+(nUn?' (trong đó '+nUn+' chưa đối chiếu được)':'')+' • chờ duyệt '+nPend+' • bị gỡ '+nGone+' • KHÔNG THẤY '+nMiss);return{nOk,nPend,nGone,nMiss}}
           function verifyItems(){const cut=Date.now()-864e5;return S.hist.filter(h=>(h.kind=='Đăng bài'||h.kind=='Chia sẻ')&&h.gurl&&/^(OK|THÀNH CÔNG|CHỜ DUYỆT|CHƯA XÁC NHẬN|KHÔNG THẤY BÀI)$/.test(h.status)&&Date.parse(String(h.time).replace(' ','T'))>=cut).slice(0,80).map(h=>({h,q:QUEUE.find(x=>x.g==gk(h.gurl))}))}
           async function verifyPub(){const it=verifyItems();if(!it.length)return toast('Không có bài nào đăng trong 24 giờ qua để kiểm tra');
            return task('Kiểm tra lại bài đã đăng ('+it.length+' bài)',async()=>{const r=await verifyPubCore(it)||{};lastRes='Có bài '+(r.nOk||0)+' • chờ duyệt '+(r.nPend||0)+' • bị gỡ '+(r.nGone||0)+' • không thấy '+(r.nMiss||0)},{total:it.length,pause:true})}
