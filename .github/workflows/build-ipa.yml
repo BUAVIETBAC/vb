@@ -659,8 +659,10 @@ jobs:
           .chip.rm{background:#FEE2E2;color:#B91C1C;font-weight:800}.chip.rw{background:#FEF3C7;color:#92400E}
           .adm{font-size:12px;line-height:1.5;margin-top:3px;color:var(--mut,#64748B)}
           details>summary{cursor:pointer;padding:6px 0}details[open]>summary{margin-bottom:4px}#pg-about details{border-top:1px solid var(--line);padding:4px 0}#pg-about small{display:block;line-height:1.65}
+          .lic{font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;margin-left:10px;white-space:nowrap;align-self:center}.lic.ok{background:#DCFCE7;color:#166534}.lic.wt{background:#FEF3C7;color:#92400E}.lic.er{background:#FEE2E2;color:#B91C1C}
+          #lock{display:none;position:fixed;inset:0;z-index:99999;background:var(--bg,#F0F2F5);align-items:center;justify-content:center;padding:24px}#lock .lk{max-width:460px;width:100%;text-align:center;background:var(--card,#fff);border:1px solid var(--line,#E4E6EB);border-radius:20px;padding:26px 22px;box-shadow:0 10px 40px rgba(0,0,0,.18)}#lock h2{margin:8px 0 6px;color:#B91C1C}#lock .rs{margin:10px 0;padding:10px;border-radius:12px;background:#FEE2E2;color:#7F1D1D;font-weight:700;line-height:1.5}#lock small{display:block;line-height:1.6}
           </style></head><body>
-          <header><div class="logo">FACEBOOK AUTUPRO<small>LÊ HIẾU • 093579.1000</small></div><div class="sp"></div><button class="acc" id="chip" onclick="P('acc')">○ FB chưa kiểm tra</button></header>
+          <header><div class="logo">FACEBOOK AUTUPRO<small>LÊ HIẾU • 093579.1000</small></div><span id="lic" class="lic wt">… ĐANG XÁC THỰC</span><div class="sp"></div><button class="acc" id="chip" onclick="P('acc')">○ FB chưa kiểm tra</button></header>
           <div class="dstrip" id="dstrip"><span id="dS"></span><span id="dL"></span><span id="dT" class="tet"></span></div>
           <div class="tcb" id="tcb" onclick="this.classList.toggle('x')"><div class="tcr"><b id="tcN">Không có tác vụ đang chạy</b><span class="pc" id="tcP">0%</span><button class="g s" onclick="event.stopPropagation();A.toggleFb()" id="bFb">Hiện FB</button><button class="g s" id="bPause" onclick="event.stopPropagation();A.pause()">⏸ Tạm dừng</button><button class="r s" onclick="event.stopPropagation();A.stop()">■ Dừng</button></div><div class="bar"><i id="tcB"></i></div><div class="tcd"><small id="tcT">TASK CENTER</small><br><small id="tcS"></small><br><small id="tcR"></small></div></div>
           <main id="main">
@@ -752,6 +754,7 @@ jobs:
           • Vào mục trạng thái Facebook để bật <b>Chạy khi ẩn app / khóa màn hình</b> và <b>Hiện cửa sổ Facebook khi chạy</b>.<br>• Nên đăng 20–40 nhóm mỗi đợt, nghỉ 60–120 giây giữa các nhóm, đổi nội dung giữa các ngày (dùng spin).<br>• Nếu Facebook chặn tính năng, app tự dừng — hãy nghỉ vài giờ rồi chạy lại.<br>• Sao lưu dữ liệu định kỳ ở mục <b>Dữ liệu → Sao lưu</b>.<br>• Đăng nhóm chưa tham gia thường không có ô soạn bài — hãy tham gia/được duyệt vào nhóm trước.</small></details>
           </div></section>
           </main>
+          <div id="lock"></div>
           <div id="dock"></div>
           <nav id="nav"></nav><div id="sheet" onclick="if(event.target.id=='sheet')A.close()"><div id="shB"></div></div><div id="toast"></div>
           <script>
@@ -993,7 +996,7 @@ jobs:
           function stageWatch(q,gi,n){let on=true;(async()=>{while(on&&!T.stop){await W(1100);if(!on)break;try{const r=await Br().exec({code:"try{return JSON.parse(window.__AST||'null')}catch(e){return null}",timeout:4});const v=r&&r.value?JSON.parse(r.value):null;if(v&&v.m&&on){q.stage=v.m;q.pct=v.p;T.frac=Math.max(.05,v.p/100);R.queue();prog(q.name+' • '+v.m+' • '+v.p+'%',gi,n)}}catch(e){}}})();return()=>{on=false}}
           async function needLogin(){const s=await Br().session();S.acc=Object.assign(S.acc||{},{ok:!!s.loggedIn,uid:s.uid||'',t:Date.now()});sv();return !s.loggedIn}
           /* ---------- Task Center ---------- */
-          async function task(name,fn,opt={}){if(T.busy){toast('Đang chạy tác vụ khác');return false}
+          async function task(name,fn,opt={}){if(!licOk()){toast('Chương trình chưa được kích hoạt hoặc đã bị khóa');licApply();return false}if(T.busy){toast('Đang chạy tác vụ khác');return false}
            if(!Br()){alert('Thiếu plugin trình duyệt AutuBrowser trong bản build này.');return false}
            M.ready=false;Object.assign(T,{busy:true,stop:false,pause:false,held:false,frac:0,canPause:!!opt.pause,name,done:0,total:opt.total||0,t0:Date.now(),msg:'Đang khởi động...',fb:false});tick();let ok=true;
            try{if(await needLogin())throw new Error('Chưa đăng nhập Facebook — vào Tài khoản → Đăng nhập.');
@@ -1281,7 +1284,7 @@ jobs:
           setT('dS','📅 '+wd+', '+p2(dd)+'/'+p2(mm)+'/'+yy);setT('dL','🌙 Âm lịch '+p2(lu[0])+'/'+p2(lu[1])+(lu[3]?' (nhuận)':'')+' • '+cc(lu[2]));
           let tt;if(lu[0]==1&&lu[1]==1&&!lu[3])tt='🧧 Hôm nay là mùng 1 Tết '+cc(lu[2])+'!';else{const ny=lu[2]+1,sd=convertLunar2Solar(1,1,ny,0);tt='🧧 Còn '+(jdFromDate(sd[0],sd[1],sd[2])-jdFromDate(dd,mm,yy))+' ngày đến Tết '+cc(ny)+' ('+p2(sd[0])+'/'+p2(sd[1])+')'}
           setT('dT',tt)}catch(e){}}
-          setInterval(dateStrip,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)dateStrip()});
+          setInterval(dateStrip,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){dateStrip();if(Date.now()-LIC.t>60000)licBeat('heartbeat')}});
           /* ---------- kiểm tra link bài gốc ---------- */
           function shareInfo(u){u=String(u||'').trim();const out={ok:false,kind:'',clean:u,why:''};if(!u){out.why='Chưa dán link';return out}
           let url;try{url=new URL(/^https?:\/\//i.test(u)?u:'https://'+u)}catch(e){out.why='Link không hợp lệ';return out}
@@ -1301,7 +1304,7 @@ jobs:
            setF(){S.set.f=$('#gF').value;S.set.s=$('#gS').value;S.set.skipOk=$('#gSkip').checked;shownN=80;sv();R.groups()},
            selAll(v){gRows().forEach(r=>v?SEL.add(gk(r[1].url)):SEL.delete(gk(r[1].url)));if(!v)SEL.clear();R.groups()},
            sync:()=>syncGroups(),scan:m=>scanGroups(m),find:()=>findGroups(),fJoin:()=>joinSelected(),fSel(){FR.forEach(g=>FSEL.add(gk(g.url)));R.find()},
-           verifyPub:()=>verifyPub(),ext(u){try{if(Br()&&Br().openExternal)Br().openExternal({url:u});else window.open(u,'_blank')}catch(e){window.open(u,'_blank')}},copyTxt(t){try{navigator.clipboard.writeText(t);toast('Đã sao chép')}catch(e){prompt('Sao chép:',t)}},
+           verifyPub:()=>verifyPub(),licRetry(){const b=$('#licB');if(b)b.textContent='Đang kiểm tra…';LIC.busy=false;licBeat('heartbeat')},ext(u){try{if(Br()&&Br().openExternal)Br().openExternal({url:u});else window.open(u,'_blank')}catch(e){window.open(u,'_blank')}},copyTxt(t){try{navigator.clipboard.writeText(t);toast('Đã sao chép')}catch(e){prompt('Sao chép:',t)}},
            admins:m=>findAdmins(m),removed:m=>checkRemoved(m),admShow:k=>admShow(k),admCopy(k){const g=S.groups.find(x=>gk(x.url)==k);if(!g||!g.admins)return;const t=(g.name||'')+'\n'+g.admins.map(a=>a.role+': '+a.name+' - '+a.url).join('\n');try{navigator.clipboard.writeText(t);toast('Đã sao chép')}catch(e){prompt('Sao chép:',t)}},
            pause(){if(!T.busy)return toast('Không có tác vụ đang chạy');if(!T.canPause)return toast('Tác vụ này chưa hỗ trợ tạm dừng — dùng ■ Dừng');T.pause=!T.pause;L(T.pause?'Yêu cầu tạm dừng (sau bước đang chạy)':'Tiếp tục chạy');toast(T.pause?'Sẽ tạm dừng sau khi xong nhóm đang đăng':'Tiếp tục...');tick();R.queue()},
            stop(){if(!T.busy)return;T.stop=true;T.pause=false;L('Đã yêu cầu dừng');toast('Đang dừng...')},
@@ -1435,11 +1438,37 @@ jobs:
           function quickHtml(){return(S.set.quick||QUICK).map((q,i)=>'<button class="g s qk" onclick="A.msgQ('+i+')">'+esc(q.length>26?q.slice(0,26)+'…':q)+'</button>').join('')+'<button class="g s qk" onclick="A.msgQadd()">＋</button>'}
           function chatShell(name){return'<div style="position:sticky;top:0;z-index:4;background:var(--card);margin:-14px -14px 6px;padding:10px 14px;border-bottom:1px solid var(--line)"><div class="row"><b style="font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💬 '+esc(name)+'</b><button class="g s fx" onclick="A.msgRef()">↻</button><button class="g s fx" onclick="A.msgFb()">Hiện FB</button><button class="g s fx" onclick="A.close()">Đóng</button></div><small id="mNote"></small></div><div id="mChat" class="mchat"></div><div class="mbar"><div id="mQk" class="mqk">'+quickHtml()+'</div><div class="row"><textarea id="mIn" rows="2" placeholder="Nhập tin nhắn trả lời…"></textarea><button class="fx" onclick="A.msgSend()">Gửi ➤</button></div></div>'}
           function renderChat(scroll){const el=$('#mChat');if(!el)return;const near=el.scrollHeight-el.scrollTop-el.clientHeight<90;el.innerHTML=M.msgs.length?M.msgs.map(m=>m.sys?'<div class="msys">'+esc(m.t)+'</div>':'<div class="bub '+(m.mine?'me':'th')+'"><span>'+esc(m.t)+'</span></div>').join(''):'<div class="msys">'+(M.loading?'Đang tải cuộc trò chuyện…':'Chưa đọc được tin nhắn — bấm ↻')+'</div>';const n=$('#mNote');if(n)n.textContent=M.needPin?'⚠ Messenger yêu cầu mã PIN — bấm “Hiện FB” để nhập 1 lần rồi bấm ↻':'';if(scroll!==false||near)el.scrollTop=el.scrollHeight}
+          /* ---------- Kích hoạt & quản lý người dùng (Google Sheet / Apps Script FIX2) ---------- */
+          const LIC={url:'https://script.google.com/macros/s/AKfycbx2c31Iiz2LDIIPNUMShKOMA5UOVvDSGoXAKko5L0fcEHMwU6_yFV4qRPN4bXz4ChnF/exec',secret:'BKM2026_Ede2NF1OPU6H9V6zDTnreNIKP8SwAq5Bl5nLoAqegOM',app:'FB_AUTUPRO_IPAD',name:'FACEBOOK AUTUPRO • IPAD',ver:'3.2',author:'Lê Hiếu - 093579.1000',grace:72*3600*1000,every:180000,t:0,err:0,busy:false,ip:null};
+          function licDev(){if(!S.dev){let d='';try{d=localStorage.getItem('autu_dev')||''}catch(e){}if(!d){let h='';try{h=Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>b.toString(16).padStart(2,'0')).join('')}catch(e){for(let i=0;i<16;i++)h+=Math.floor(Math.random()*16).toString(16)}d='IPAD-'+h.toUpperCase()}S.dev=d;sv()}try{localStorage.setItem('autu_dev',S.dev)}catch(e){}return S.dev}
+          function licSt(){const l=S.lic;if(l&&l.st=='LOCK')return'LOCK';if(l&&l.st=='ACTIVE'&&Date.now()-l.t<LIC.grace)return'ACTIVE';return LIC.err?'NEED':'CHECK'}
+          function licOk(){return licSt()=='ACTIVE'}
+          function licApply(){const st=licSt(),c=$('#lic'),o=$('#lock');
+           if(c){c.className='lic '+(st=='ACTIVE'?'ok':st=='CHECK'?'wt':'er');c.textContent=st=='ACTIVE'?'✔ ĐÃ KÍCH HOẠT':st=='LOCK'?'🔒 ĐÃ BỊ KHÓA':st=='NEED'?'⚠ CHƯA XÁC THỰC':'… ĐANG XÁC THỰC'}
+           if(o){if(st=='LOCK'||st=='NEED'){const l=S.lic||{};const lk=st=='LOCK';
+            o.innerHTML='<div class="lk"><div style="font-size:46px">'+(lk?'🔒':'📡')+'</div><h2>'+(lk?'CHƯƠNG TRÌNH ĐÃ BỊ KHÓA':'CẦN KẾT NỐI INTERNET')+'</h2>'
+             +(lk?'<div class="rs">'+esc(l.reason||'Tài khoản/thiết bị này đã bị quản trị viên khóa.')+'</div>':'<div class="rs">Chưa xác thực được kích hoạt. Hãy bật Wi-Fi/4G rồi bấm “Kiểm tra lại”.</div>')
+             +(l.notice?'<small>'+esc(l.notice)+'</small>':'')+'<small style="margin-top:8px">Liên hệ tác giả <b>Hiếu • 0935 791 000</b> để được mở khóa.</small><small>Mã máy: <b>'+esc(licDev())+'</b></small>'
+             +'<div class="grid3" style="margin-top:14px"><button class="s" id="licB" onclick="A.licRetry()">↻ Kiểm tra lại</button><button class="g s" onclick="A.ext(\'tel:0935791000\')">📞 Gọi</button><button class="g s" onclick="A.ext(\'https://zalo.me/0935791000\')">💬 Zalo</button></div></div>';o.style.display='flex'}
+            else{o.innerHTML='';o.style.display='none'}}
+           if((st=='LOCK'||st=='NEED')&&T.busy){T.stop=true;T.pause=false}}
+          async function licIp(){if(LIC.ip)return LIC.ip;try{const c=new AbortController();const tm=setTimeout(()=>c.abort(),4000);const r=await fetch('https://ipwho.is/',{signal:c.signal});clearTimeout(tm);const j=await r.json();if(j&&j.ip)LIC.ip={ip:j.ip,loc:[j.city,j.region,j.country].filter(Boolean).join(', '),isp:(j.connection&&(j.connection.isp||j.connection.org))||''}}catch(e){}return LIC.ip||{ip:'',loc:'',isp:''}}
+          async function licBeat(ev){if(LIC.busy)return;LIC.busy=true;try{const ip=await licIp(),dev=licDev(),ua=navigator.userAgent||'',m=ua.match(/OS (\d+)[_.](\d+)/),pad=/iPad/.test(ua)||(navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1);
+            const uid=(S.acc&&S.acc.uid)||'',nm=(S.acc&&(S.acc.name||S.acc.uid))||'';
+            const body={action:'device_heartbeat',api_key:LIC.secret,secret:LIC.secret,device_id:dev,physical_device_id:dev,event:ev,event_type:ev,app_id:LIC.app,program_name:LIC.name,app_name:LIC.name,version:LIC.ver,app_version:LIC.ver,author:LIC.author,file_name:'FACEBOOK-AUTUPRO.ipa',machine_name:pad?'iPad':'iPhone',computer_name:pad?'iPad':'iPhone',windows_user:uid?('FB '+uid):'',os:(pad?'iPadOS':'iOS')+(m?' '+m[1]+'.'+m[2]:''),arch:'iOS',architecture:'iOS',internal_ip:'',local_ip:'',public_ip:ip.ip,location:ip.loc,isp:ip.isp,organization:LIC.name,buyer_name:nm};
+            const c=new AbortController(),tm=setTimeout(()=>c.abort(),25000);
+            const r=await fetch(LIC.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),signal:c.signal,redirect:'follow'});clearTimeout(tm);
+            const j=JSON.parse(await r.text());if(!j||!j.ok)throw new Error((j&&j.error)||'BAD_RESPONSE');
+            const st=String(j.admin_status||j.device_status||'ACTIVE').toUpperCase()=='LOCK'?'LOCK':'ACTIVE';
+            LIC.err=0;LIC.t=Date.now();S.lic={st:st,t:LIC.t,reason:String(j.lock_reason||''),notice:[j.notice_title,j.admin_notice].filter(Boolean).join(' — ')};sv()}
+           catch(e){LIC.err=(LIC.err||0)+1;try{L('Kích hoạt: lỗi kết nối '+(e.message||e))}catch(_){}}
+           finally{LIC.busy=false;licApply();const b=$('#licB');if(b)b.textContent='↻ Kiểm tra lại'}}
+          function licStart(){licDev();licApply();licBeat('startup');setInterval(()=>licBeat('heartbeat'),LIC.every)}
           /* ---------- khởi động ---------- */
           (async function init(){let raw='';try{if(Br()){const r=await Br().load({key:KEY});raw=r&&r.value||''}}catch(e){}if(!raw)try{raw=localStorage.getItem(KEY)||''}catch(e){}
            if(raw)try{const d=JSON.parse(raw);S=Object.assign(S,d);S.set=Object.assign({skipOk:true,bg:true,showFb:false,theme:'auto',j1:15,j2:30,f:'Tất cả',s:'Thành viên ↓'},d.set||{})}catch(e){}
            if(!S.mig3){S.groups.forEach(g=>{if(g.membership_status=='ĐÃ THAM GIA'){if(g.sync_source=='NHÓM CỦA BẠN'){g.join_evidence=g.join_evidence||'danh sách nhóm của bạn'}else{g.membership_status='KHÔNG XÁC MINH';g.membership_verified=false;g.sync_verified=false;g.join_evidence=''}}});S.mig3=1;sv()}
-           S.set.s='Thành viên ↓';$('#gF').value=S.set.f;$('#gS').value=S.set.s;$('#gSkip').checked=!!S.set.skipOk;$('#cLite').checked=S.set.light!==false;theme();R.all();dateStrip();try{if(S.draft)campWrite(S.draft)}catch(e){}A.campUi();R.recent();P('groups');
+           S.set.s='Thành viên ↓';$('#gF').value=S.set.f;$('#gS').value=S.set.s;$('#gSkip').checked=!!S.set.skipOk;$('#cLite').checked=S.set.light!==false;theme();R.all();dateStrip();try{if(S.draft)campWrite(S.draft)}catch(e){}A.campUi();R.recent();P('groups');licStart();
            if(Br()&&Br().addListener)Br().addListener('stopRequested',()=>A.stop());
           S.set.msgAuto=false;clearInterval(M.timer);
            if(!Br())toast('Chưa tìm thấy plugin trình duyệt');else try{await needLogin();tick();R.acc()}catch(e){}})();
