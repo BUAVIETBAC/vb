@@ -661,8 +661,16 @@ jobs:
           details>summary{cursor:pointer;padding:6px 0}details[open]>summary{margin-bottom:4px}#pg-about details{border-top:1px solid var(--line);padding:4px 0}#pg-about small{display:block;line-height:1.65}
           .lic{font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;margin-left:10px;white-space:nowrap;align-self:center}.lic.ok{background:#DCFCE7;color:#166534}.lic.wt{background:#FEF3C7;color:#92400E}.lic.er{background:#FEE2E2;color:#B91C1C}
           #lock{display:none;position:fixed;inset:0;z-index:99999;background:var(--bg,#F0F2F5);align-items:center;justify-content:center;padding:24px}#lock .lk{max-width:460px;width:100%;text-align:center;background:var(--card,#fff);border:1px solid var(--line,#E4E6EB);border-radius:20px;padding:26px 22px;box-shadow:0 10px 40px rgba(0,0,0,.18)}#lock h2{margin:8px 0 6px;color:#B91C1C}#lock .rs{margin:10px 0;padding:10px;border-radius:12px;background:#FEE2E2;color:#7F1D1D;font-weight:700;line-height:1.5}#lock small{display:block;line-height:1.6}
+          /* ===== Header gọn (bản cuối) ===== */
+          header{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 6px) 14px 8px!important;background:linear-gradient(90deg,#0A6CFF 0%,#2B45F5 62%,#5B3DF0 100%)!important;box-shadow:none!important}
+          header .logo{font-size:17px!important;font-weight:900;letter-spacing:.7px;line-height:1.1;white-space:nowrap;min-width:0}
+          header .logo small{display:block!important;background:none!important;padding:0!important;border-radius:0!important;text-shadow:none!important;font-size:10.5px!important;font-weight:600!important;letter-spacing:.4px!important;margin:3px 0 0 0!important;opacity:.82!important}
+          header .acc{flex-shrink:0;white-space:nowrap;font-size:11.5px!important;padding:6px 12px!important;line-height:1.2}
+          .dstrip{display:flex!important;flex-wrap:nowrap!important;gap:0!important;overflow:hidden;white-space:nowrap;font-size:11px!important;font-weight:600;padding:0 14px 8px!important;background:linear-gradient(90deg,#0A6CFF 0%,#2B45F5 62%,#5B3DF0 100%)!important;color:#fff;margin:0!important;box-shadow:0 6px 18px rgba(24,60,180,.28)}
+          .dstrip span{min-width:0;overflow:hidden;text-overflow:ellipsis}.dstrip span+span::before{content:"•";margin:0 7px;opacity:.55}
+          .dstrip .tet{margin-left:0!important;background:none!important;padding:0!important;border-radius:0!important}
           </style></head><body>
-          <header><div class="logo">FACEBOOK AUTUPRO<small>LÊ HIẾU • 093579.1000</small></div><span id="lic" class="lic wt">… ĐANG XÁC THỰC</span><div class="sp"></div><button class="acc" id="chip" onclick="P('acc')">○ FB chưa kiểm tra</button></header>
+          <header><div class="logo">FACEBOOK AUTUPRO<small>LÊ HIẾU • 093579.1000</small></div><div class="sp"></div><button class="acc" id="chip" onclick="P('acc')">○ FB chưa kiểm tra</button></header>
           <div class="dstrip" id="dstrip"><span id="dS"></span><span id="dL"></span><span id="dT" class="tet"></span></div>
           <div class="tcb" id="tcb" onclick="this.classList.toggle('x')"><div class="tcr"><b id="tcN">Không có tác vụ đang chạy</b><span class="pc" id="tcP">0%</span><button class="g s" onclick="event.stopPropagation();A.toggleFb()" id="bFb">Hiện FB</button><button class="g s" id="bPause" onclick="event.stopPropagation();A.pause()">⏸ Tạm dừng</button><button class="r s" onclick="event.stopPropagation();A.stop()">■ Dừng</button></div><div class="bar"><i id="tcB"></i></div><div class="tcd"><small id="tcT">TASK CENTER</small><br><small id="tcS"></small><br><small id="tcR"></small></div></div>
           <main id="main">
@@ -732,6 +740,7 @@ jobs:
           <div class="card"><h3>Nhật ký</h3><pre id="lg"></pre></div></section>
           <section class="pg" id="pg-about">
           <div class="card"><h2 style="margin:0">FACEBOOK AUTUPRO</h2><small>Phiên bản 3.2 • Đăng bài, chia sẻ và quản lý nhóm Facebook tự động</small>
+          <div class="card slim" style="margin-top:10px"><div class="row" style="flex-wrap:nowrap;align-items:center"><b style="flex:1;min-width:0">Trạng thái</b><span id="lic" class="lic wt" style="margin:0;flex:0 0 auto!important;width:auto!important">… ĐANG XÁC THỰC</span></div><small id="licInfo"></small></div>
           <div class="card slim" style="margin-top:10px"><b>Tác giả: Hiếu</b><br><span style="font-size:20px;font-weight:800;letter-spacing:.5px">0935 791 000</span>
           <div class="grid3" style="margin-top:8px"><button class="s" onclick="A.ext('tel:0935791000')">📞 Gọi</button><button class="g s" onclick="A.ext('https://zalo.me/0935791000')">💬 Zalo</button><button class="g s" onclick="A.copyTxt('0935791000')">Sao chép</button></div>
           <small>Hỗ trợ cài đặt, báo lỗi và đặt làm thêm tính năng.</small></div></div>
@@ -948,7 +957,7 @@ jobs:
           async function pg_mine(A){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(2600);
           for(let i=0;i<3;i++){window.scrollTo(0,document.body.scrollHeight);await A.sl(900)}
           const main=document.querySelector('[role=main]')||document.body,RX=/(https:\/\/www\.facebook\.com\/groups\/[^/?#]+\/(?:posts|permalink)\/\d+)/;
-          const arts=[...main.querySelectorAll('[role=article]')].slice(0,30).map(a=>{let l='';for(const x of a.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]')){const m=x.href.match(RX);if(m){l=m[1];break}}return{l:l,t:(a.innerText||'').replace(/\s+/g,' ').slice(0,1200)}});
+          const arts=[...main.querySelectorAll('[role=article]')].slice(0,30).map(a=>{let l='';for(const x of a.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]')){const m=x.href.match(RX);if(m){l=m[1];break}}return{l:l,t:(a.innerText||'').replace(/\s+/g,' ').slice(0,1200),h:[...a.querySelectorAll('a[href]')].slice(0,40).map(x=>x.href).join(' ').slice(0,3000)}});
           return{arts:arts,url:location.pathname.slice(0,100),full:(main.innerText||'').replace(/\s+/g,' ').slice(0,30000)}}
           async function pg_removed(A,o){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(2600);
           if(!/my_removed_content/.test(location.href))return{r:'KHÔNG VÀO ĐƯỢC',d:location.pathname.slice(0,60)};
@@ -1009,7 +1018,7 @@ jobs:
           if(b){const pct=T.total?Math.round(Math.min(T.done+(T.frac||0),T.total)/T.total*100):8,e=Math.floor((Date.now()-T.t0)/1000),mm=String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
           const stt=T.held?'ĐÃ TẠM DỪNG':T.pause?'ĐANG CHẠY • SẼ TẠM DỪNG SAU BƯỚC NÀY':'ĐANG CHẠY';setT('tcT','TASK CENTER • '+stt);setT('bPause',T.pause?'▶ Tiếp tục':'⏸ Tạm dừng');setT('qPauseB',T.pause?'▶ Tiếp tục':'⏸ Tạm dừng');{const d=T.canPause?'':'none';const e1=$('#bPause'),e2=$('#qPauseB');if(e1)e1.style.display=d;if(e2)e2.style.display=d}setT('tcN',T.name+(T.msg?' — '+T.msg:''));$('#tcB').style.width=pct+'%';setT('tcP',pct+'%');
           setT('tcS','Trạng thái: '+stt.toLowerCase()+' • Tiến độ '+pct+'% • Thời gian '+mm);setT('tcR','Kết quả gần nhất: '+(lastRes||'chưa có kết quả'));setT('bFb',T.fb?'Ẩn FB':'Hiện FB')}
-          const a=S.acc;setT('chip',a?(a.ok?'● FB đã đăng nhập':'○ FB chưa đăng nhập'):'○ FB chưa kiểm tra')}
+          const a=S.acc;setT('chip',a?(a.ok?'● Đã đăng nhập':'○ Chưa đăng nhập'):'○ Chưa kiểm tra')}
           setInterval(()=>{if(T.busy&&!document.hidden)tick()},2000);
           let _pg=0;function prog(msg,done,total,force){T.msg=msg;if(done!=null)T.done=done;if(total!=null)T.total=total;const n=Date.now();if(!force&&n-_pg<250)return;_pg=n;setT('gProg',msg);setT('gCnt',(T.done||0)+'/'+(T.total||0));$('#gBar').style.width=(T.total?Math.round(Math.min(T.done+(T.frac||0),T.total)/T.total*100):T.busy?8:0)+'%';tick()}
           /* ---------- đọc chi tiết nhóm (port _group_detail) ---------- */
@@ -1139,15 +1148,17 @@ jobs:
            const byG={};items.forEach(it=>{const k=gk(it.h.gurl||it.q&&it.q.gurl);if(k)(byG[k]=byG[k]||[]).push(it)});const keys=Object.keys(byG);if(!keys.length)return;
            S.removed=S.removed||{};
            const readPage=async(url,tag)=>{await nav(url,2600);let r=null;try{r=await run(pg_mine,null,60)}catch(e){}r=r&&r.arts?r:{arts:[],url:'',full:''};r.ok=r.url.indexOf(tag)>=0;return r};
-           const match=(h,pg,used,loose)=>{const key=nk(h.txt||'').slice(0,30);let idx=-1;
+           const TIMER=/(vừa xong|just now|\d+\s?(giây|phút|giờ|min|mins|hr|hrs|h|m)(?![a-zà-ỹ]))/i,SHR=/(đã chia sẻ|shared a|shared an|shared this|chia sẻ một)/i;
+           const match=(h,pg,used,loose)=>{const key=nk(h.txt||'').slice(0,30),pid=h.src?postId(h.src):'',shr=h.kind=='Chia sẻ';let idx=-1;
             if(key.length>=10){idx=pg.arts.findIndex((a,j)=>!used.has(j)&&nk(a.t).includes(key));if(idx<0&&!loose&&nk(pg.full).includes(key))idx=-2}
-            else if(loose){idx=pg.arts.findIndex((a,j)=>!used.has(j)&&/(vừa xong|just now|\b\d+\s?(phút|giờ|min|mins|hr|hrs|m|h)\b)/i.test(String(a.t).slice(0,260)))}
+            if(idx==-1&&pid){idx=pg.arts.findIndex((a,j)=>!used.has(j)&&(String(a.h||'').includes(pid)||String(a.t).includes(pid)));if(idx<0&&!loose&&String(pg.full).includes(pid))idx=-2}
+            if(idx==-1&&loose){const rec=a=>TIMER.test(String(a.t).slice(0,300));idx=pg.arts.findIndex((a,j)=>!used.has(j)&&(shr?(SHR.test(String(a.t).slice(0,300))&&rec(a)):(key.length<10&&rec(a))))}
             if(idx>=0)used.add(idx);return idx};
            const done=(it,st,note,l)=>{it.h.status=st;it.h.detail=(note+(it.h.detail&&!/^(✔|⏳|🚫|⚠)/.test(it.h.detail)?' • '+it.h.detail:'')).slice(0,300);if(l)it.h.link=l;it.h.ver='XM';if(it.q){it.q.st=st;it.q.note=note;it.q.v=1;if(l)it.q.link=l}};
            let i=0,nOk=0,nPend=0,nGone=0,nMiss=0;
            for(const k of keys){if(T.stop)break;while(T.pause&&!T.stop)await W(400);const grp=byG[k],g0=grp[0].h,base=canon(g0.gurl).replace(/\/$/,''),gg=S.groups.find(x=>gk(x.url)==k)||{};
             prog('Xác minh bài trong: '+g0.target,i,keys.length);
-            const p1=await readPage(base+'/user/'+uid+'/','/user/');const u1=new Set();let rest=[];
+            const p1=await readPage(base+'/user/'+uid+'/','/user/');const u1=new Set();let rest=[];const rdOK=p1.arts.length>0||/(chưa có bài viết|không có bài viết|no posts|nothing to show)/i.test(p1.full||'');
             if(!p1.ok&&gg.membership_status!='ĐÃ THAM GIA'){grp.forEach(it=>{done(it,'KHÔNG THẤY BÀI','⚠ Chưa tham gia nhóm nên không đăng được (không vào được trang bài của bạn trong nhóm).');nMiss++})}
             else if(!p1.ok){grp.forEach(it=>{if(it.q)it.q.note='⚠ Chưa xác minh được (không mở được trang bài của bạn trong nhóm) — hãy mở nhóm kiểm tra'})}
             else{for(const it of grp){const ix=match(it.h,p1,u1,true);if(ix>=0){done(it,'THÀNH CÔNG','✔ Đã xác minh: bài có trong nhóm',p1.arts[ix].l);nOk++}else rest.push(it)}}
@@ -1155,7 +1166,7 @@ jobs:
              for(const it of rest){const ix=match(it.h,p2,u2,false);if(ix!==-1){done(it,'CHỜ DUYỆT','⏳ Đã xác minh: bài đang chờ admin duyệt');nPend++}else r2.push(it)}
              if(r2.length){const p3=await readPage(base+'/my_removed_content/','my_removed_content');const u3=new Set();
               for(const it of r2){const ix=match(it.h,p3,u3,false);if(ix!==-1){done(it,'BỊ GỠ','🚫 Admin đã gỡ bài này');it.h.removed=true;S.removed[k]={st:'BỊ GỠ',t:now(),n:1,sample:''};nGone++}
-               else{done(it,'KHÔNG THẤY BÀI','⚠ Báo đã đăng nhưng KHÔNG thấy bài (đã kiểm tra: Bài của bạn, Chờ duyệt, Bị gỡ). Có thể nhóm chặn đăng/chưa tham gia/Facebook chặn — hãy mở nhóm kiểm tra.');nMiss++}}}}
+               else if(!rdOK){done(it,'CHƯA XÁC NHẬN','⚠ Chưa đọc được danh sách bài của bạn trong nhóm — hãy bấm “Mở nhóm” để kiểm tra bằng mắt.')}else{done(it,'KHÔNG THẤY BÀI','⚠ Báo đã đăng nhưng KHÔNG thấy bài (đã kiểm tra: Bài của bạn, Chờ duyệt, Bị gỡ). Có thể nhóm chặn đăng/chưa tham gia/Facebook chặn — hãy mở nhóm kiểm tra.');nMiss++}}}}
             i++;prog(g0.target+' ✓',i,keys.length,true);sv();R.queue();RT('hist');RT('groups');if(i<keys.length&&!T.stop)await sl(2000+Math.random()*2000)}
            L('Xác minh bài: có bài '+nOk+' • chờ duyệt '+nPend+' • bị gỡ '+nGone+' • KHÔNG THẤY '+nMiss);return{nOk,nPend,nGone,nMiss}}
           function verifyItems(){const cut=Date.now()-864e5;return S.hist.filter(h=>(h.kind=='Đăng bài'||h.kind=='Chia sẻ')&&h.gurl&&/^(OK|THÀNH CÔNG|CHỜ DUYỆT|CHƯA XÁC NHẬN|KHÔNG THẤY BÀI)$/.test(h.status)&&Date.parse(String(h.time).replace(' ','T'))>=cut).slice(0,80).map(h=>({h,q:QUEUE.find(x=>x.g==gk(h.gurl))}))}
@@ -1279,10 +1290,10 @@ jobs:
           window.jdFromDate=jdFromDate;
           window.convertSolar2Lunar=function(dd,mm,yy){const dn=jdFromDate(dd,mm,yy),k=Math.floor((dn-2415021.076998695)/29.530588853);let ms=nmDay(k+1);if(ms>dn)ms=nmDay(k);let a11=m11(yy),b11=a11,ly;if(a11>=ms){ly=yy;a11=m11(yy-1)}else{ly=yy+1;b11=m11(yy+1)}const ld=dn-ms+1,diff=Math.floor((ms-a11)/29);let leap=0,lm=diff+11;if(b11-a11>365){const lo=leapOff(a11);if(diff>=lo){lm=diff+10;if(diff==lo)leap=1}}if(lm>12)lm-=12;if(lm>=11&&diff<4)ly-=1;return[ld,lm,ly,leap]};
           window.convertLunar2Solar=function(ld,lm,ly,leap){let a11,b11;if(lm<11){a11=m11(ly-1);b11=m11(ly)}else{a11=m11(ly);b11=m11(ly+1)}const k=Math.floor(0.5+(a11-2415021.076998695)/29.530588853);let off=lm-11;if(off<0)off+=12;if(b11-a11>365){const lo=leapOff(a11);let lmn=lo-2;if(lmn<0)lmn+=12;if(leap&&lm!=lmn)return[0,0,0];else if(leap||off>=lo)off+=1}return jdToDate(nmDay(k+off)+ld-1)}})();
-          function dateStrip(){try{const d=new Date(),dd=d.getDate(),mm=d.getMonth()+1,yy=d.getFullYear();const wd=['Chủ nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'][d.getDay()];
+          function dateStrip(){try{const d=new Date(),dd=d.getDate(),mm=d.getMonth()+1,yy=d.getFullYear();const wd=['CN','T2','T3','T4','T5','T6','T7'][d.getDay()];
           const lu=convertSolar2Lunar(dd,mm,yy),CAN=['Giáp','Ất','Bính','Đinh','Mậu','Kỷ','Canh','Tân','Nhâm','Quý'],CHI=['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'],cc=y=>CAN[(y+6)%10]+' '+CHI[(y+8)%12],p2=n=>String(n).padStart(2,'0');
-          setT('dS','📅 '+wd+', '+p2(dd)+'/'+p2(mm)+'/'+yy);setT('dL','🌙 Âm lịch '+p2(lu[0])+'/'+p2(lu[1])+(lu[3]?' (nhuận)':'')+' • '+cc(lu[2]));
-          let tt;if(lu[0]==1&&lu[1]==1&&!lu[3])tt='🧧 Hôm nay là mùng 1 Tết '+cc(lu[2])+'!';else{const ny=lu[2]+1,sd=convertLunar2Solar(1,1,ny,0);tt='🧧 Còn '+(jdFromDate(sd[0],sd[1],sd[2])-jdFromDate(dd,mm,yy))+' ngày đến Tết '+cc(ny)+' ('+p2(sd[0])+'/'+p2(sd[1])+')'}
+          setT('dS',wd+', '+p2(dd)+'/'+p2(mm)+'/'+yy);setT('dL','Âm '+p2(lu[0])+'/'+p2(lu[1])+(lu[3]?' nhuận':'')+' '+cc(lu[2]));
+          let tt;if(lu[0]==1&&lu[1]==1&&!lu[3])tt='Hôm nay mùng 1 Tết '+cc(lu[2])+'!';else{const ny=lu[2]+1,sd=convertLunar2Solar(1,1,ny,0);tt='Còn '+(jdFromDate(sd[0],sd[1],sd[2])-jdFromDate(dd,mm,yy))+' ngày đến Tết'}
           setT('dT',tt)}catch(e){}}
           setInterval(dateStrip,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){dateStrip();if(Date.now()-LIC.t>60000)licBeat('heartbeat')}});
           /* ---------- kiểm tra link bài gốc ---------- */
@@ -1445,6 +1456,7 @@ jobs:
           function licOk(){return licSt()=='ACTIVE'}
           function licApply(){const st=licSt(),c=$('#lic'),o=$('#lock');
            if(c){c.className='lic '+(st=='ACTIVE'?'ok':st=='CHECK'?'wt':'er');c.textContent=st=='ACTIVE'?'✔ ĐÃ KÍCH HOẠT':st=='LOCK'?'🔒 ĐÃ BỊ KHÓA':st=='NEED'?'⚠ CHƯA XÁC THỰC':'… ĐANG XÁC THỰC'}
+           {const li=$('#licInfo');if(li)li.textContent='Mã máy: '+licDev()+(S.lic&&S.lic.t?' • Xác thực lần cuối: '+new Date(S.lic.t).toLocaleString('vi-VN'):'')}
            if(o){if(st=='LOCK'||st=='NEED'){const l=S.lic||{};const lk=st=='LOCK';
             o.innerHTML='<div class="lk"><div style="font-size:46px">'+(lk?'🔒':'📡')+'</div><h2>'+(lk?'CHƯƠNG TRÌNH ĐÃ BỊ KHÓA':'CẦN KẾT NỐI INTERNET')+'</h2>'
              +(lk?'<div class="rs">'+esc(l.reason||'Tài khoản/thiết bị này đã bị quản trị viên khóa.')+'</div>':'<div class="rs">Chưa xác thực được kích hoạt. Hãy bật Wi-Fi/4G rồi bấm “Kiểm tra lại”.</div>')
