@@ -832,7 +832,7 @@ jobs:
           <div id="flP" style="display:none">
           <div class="card slim"><small>Vào nhóm FL chéo → comment bài → tự bấm “Theo dõi” các tài khoản đã bình luận trong bài đó.</small>
           <textarea id="flGr" placeholder="Link nhóm FL chéo (mỗi dòng 1 link)" oninput="A.flSave()" style="min-height:70px;margin-top:6px"></textarea>
-          <div class="grid2"><button class="g s" onclick="A.flAddSel()">＋ Thêm nhóm đang chọn (tab Nhóm FB)</button><button class="g s" onclick="A.flClr()">Xóa danh sách</button></div><small id="flGn"></small></div>
+          <div class="grid3"><button class="s" onclick="A.flPick()">📋 Chọn từ danh sách</button><button class="g s" onclick="A.flAddSel()">＋ Nhóm đang tích</button><button class="g s" onclick="A.flClr()">Xóa</button></div><small id="flGn"></small></div>
           <div class="card slim"><textarea id="flTx" placeholder="Nội dung comment, ví dụ: FL chéo nha mn (hỗ trợ {a|b}, nhiều mẫu cách bằng ---)" oninput="A.flSave()" style="min-height:64px"></textarea>
           <div class="grid3"><div><small>Bài / nhóm</small><input type="number" id="flPosts" onchange="A.flSave()"></div><div><small>BL tối thiểu</small><input type="number" id="flMinC" onchange="A.flSave()"></div><div><small>FL tối đa / bài</small><input type="number" id="flMaxF" onchange="A.flSave()"></div></div>
           <div class="grid3"><div><small>FL tối đa / lần chạy</small><input type="number" id="flMaxR" onchange="A.flSave()"></div><div><small>Nghỉ nhóm min (s)</small><input type="number" id="flD1" onchange="A.flSave()"></div><div><small>Nghỉ nhóm max (s)</small><input type="number" id="flD2" onchange="A.flSave()"></div></div>
@@ -1579,7 +1579,7 @@ jobs:
           /* ---------- Comment đẩy bài & FL chéo ---------- */
           const BPD={text:'{Up|Up up|Đẩy bài|Lên top nào} {nha mn|nhé cả nhà|nè}',hrs:6,day:1,per:'3',max:20,d1:45,d2:90,log:{}};
           const FLD={text:'FL chéo nha mn',groups:'',posts:2,minC:1,maxF:15,maxR:60,gd1:45,gd2:90,f1:2,f2:5,daily:150,author:false,log:{}};
-          let BSEL=new Set();
+          let BSEL=new Set(),FLSEL=new Set();
           function BP(){if(!S.bump)S.bump=JSON.parse(JSON.stringify(BPD));else for(const k in BPD)if(S.bump[k]===undefined)S.bump[k]=JSON.parse(JSON.stringify(BPD[k]));return S.bump}
           function FL(){if(!S.fl)S.fl=JSON.parse(JSON.stringify(FLD));else for(const k in FLD)if(S.fl[k]===undefined)S.fl[k]=JSON.parse(JSON.stringify(FLD[k]));return S.fl}
           function BPS(){return S.set.bseg||'bp'}
@@ -1611,8 +1611,17 @@ jobs:
           bselAll(on){BSEL.clear();if(on){const m=BP().max;bumpRows().filter(r=>r.ok).slice(0,m).forEach(r=>BSEL.add(r.link))}R.bump()},
           bpSave(){const b=BP(),g=id=>($('#'+id)||{}).value;b.text=g('bpTx');b.hrs=Math.max(0,+g('bpHrs')||0);b.day=Math.max(1,+g('bpDay')||1);b.per=g('bpPer')||'3';b.max=Math.max(1,+g('bpMax')||20);b.d1=Math.max(10,+g('bpD1')||45);b.d2=Math.max(b.d1,+g('bpD2')||90);sv()},
           flSave(){const f=FL(),g=id=>($('#'+id)||{}).value;f.text=g('flTx');f.groups=g('flGr');f.posts=Math.max(1,Math.min(5,+g('flPosts')||2));f.minC=Math.max(0,+g('flMinC')||0);f.maxF=Math.max(1,+g('flMaxF')||15);f.maxR=Math.max(1,+g('flMaxR')||60);f.gd1=Math.max(10,+g('flD1')||45);f.gd2=Math.max(f.gd1,+g('flD2')||90);f.f1=Math.max(1,+g('flF1')||2);f.f2=Math.max(f.f1,+g('flF2')||5);f.daily=Math.max(1,+g('flDaily')||150);f.author=!!($('#flAuth')||{}).checked;sv();const gn=$('#flGn');if(gn)bumpDockN()},
-          flAddSel(){const f=FL(),have=new Set(flUrls().map(gk)),add=[];for(const g of S.groups){const k=gk(g.url);if(SEL.has(k)&&!have.has(k)){add.push(canon(g.url)||g.url);have.add(k)}}if(!add.length)return toast('Chưa chọn nhóm nào ở tab Nhóm FB (hoặc nhóm đã có sẵn)');f.groups=(String(f.groups||'').trim()+'\n'+add.join('\n')).trim();sv();R.bump();toast('Đã thêm '+add.length+' nhóm')},
+          flAddSel(){const f=FL(),have=new Set(flUrls().map(gk)),add=[];for(const g of S.groups){const k=gk(g.url);if(SEL.has(k)&&!have.has(k)){add.push(canon(g.url)||g.url);have.add(k)}}if(!add.length)return toast('Chưa tích nhóm nào ở tab Nhóm FB. Hãy bấm “📋 Chọn từ danh sách”.');f.groups=(String(f.groups||'').trim()+'\n'+add.join('\n')).trim();sv();R.bump();toast('Đã thêm '+add.length+' nhóm')},
           flClr(){if(!confirm('Xóa toàn bộ danh sách nhóm FL chéo?'))return;FL().groups='';sv();R.bump()},
+          flPick(){if(!S.groups.length)return alert('Chưa có nhóm nào trong app. Vào tab Nhóm FB bấm “Đồng bộ nhóm của tôi” trước.');
+          FLSEL=new Set(flUrls().map(gk));const bl=blockedKeys();
+          const rows=S.groups.filter(g=>!bl.has(gk(g.url))).map(g=>[g,mnum(g),g.membership_status=='ĐÃ THAM GIA'?1:0]).sort((a,b)=>b[2]-a[2]||b[1]-a[1]||String(a[0].name||'').localeCompare(String(b[0].name||'')));
+          shB('<div style="position:sticky;top:0;z-index:4;background:var(--card);margin:-14px -14px 8px;padding:12px 14px 8px;border-bottom:1px solid var(--line)"><div class="row"><h2 style="margin:0">Chọn nhóm FL chéo</h2><b class="fx" id="flpN" style="color:var(--acc)"></b></div><input type="search" id="flpQ" class="srch" placeholder="🔎 Tìm nhóm theo tên / link…" oninput="A.flpFind(this.value)" autocomplete="off" autocapitalize="off"><div class="grid3" style="margin-top:8px"><button class="g s" onclick="A.flpVis(1)">Chọn kết quả</button><button class="g s" onclick="A.flpVis(0)">Bỏ kết quả</button><button class="s" onclick="A.flpDone()">Xong</button></div></div><div id="flpL">'+rows.map(([g,n,j],i)=>{const k=gk(g.url),q=(String(g.name||'')+' '+g.url).toLowerCase();return'<label class="gi" data-q="'+esc(q+' '+nfd(q))+'"><input type="checkbox" data-k="'+esc(k)+'" '+(FLSEL.has(k)?'checked ':'')+'onchange="A.flp(this.dataset.k,this.checked)"><div class="gb"><b>'+(i+1)+'. '+esc(g.name||g.url)+'</b><small>'+(n?n.toLocaleString('vi'):esc(g.members||'—'))+' thành viên</small><div class="chips">'+chip(j?'ĐÃ THAM GIA':String(g.membership_status||'CHƯA XÁC MINH'),j?'ok':'wt')+'</div></div></label>'}).join('')+'</div>');A.flpN()},
+          flpN(){const e=$('#flpN');if(e)e.textContent='Đã chọn '+FLSEL.size},
+          flp(k,on){if(on)FLSEL.add(k);else FLSEL.delete(k);A.flpN()},
+          flpFind(v){const q=String(v||'').trim().toLowerCase(),q2=nfd(q);document.querySelectorAll('#flpL .gi').forEach(l=>{const d=l.dataset.q||'';l.style.display=(!q||d.includes(q)||d.includes(q2))?'':'none'})},
+          flpVis(on){document.querySelectorAll('#flpL .gi').forEach(l=>{if(l.style.display==='none')return;const c=l.querySelector('input');if(c){c.checked=!!on;if(on)FLSEL.add(c.dataset.k);else FLSEL.delete(c.dataset.k)}});A.flpN()},
+          flpDone(){const f=FL(),keep=flUrls().filter(u=>!S.groups.some(g=>gk(g.url)==gk(u))),sel=S.groups.filter(g=>FLSEL.has(gk(g.url))).map(g=>canon(g.url)||g.url);f.groups=[...sel,...keep].join('\n');sv();A.close();R.bump();toast('Đã chọn '+sel.length+' nhóm FL chéo')},
           bumpRun(){return bumpRun()},flRun(){return flRun()}});
           async function bumpRun(){A.bpSave();const b=BP(),rows=bumpRows().filter(r=>BSEL.has(r.link)&&r.ok),tpls=tplSplit(b.text);
           if(!rows.length)return toast('Chưa chọn bài nào đủ điều kiện để đẩy');if(!tpls.length)return alert('Chưa có nội dung comment.');
