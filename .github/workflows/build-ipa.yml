@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
 env:
   # Chi can sua so nay khi doi ban lon (vd 3.3 -> 3.4). Phan sau tu tang theo moi lan build.
-  APP_BASE: "3.3"
+  APP_BASE: "3.4"
 jobs:
   build:
     runs-on: macos-14
@@ -772,6 +772,7 @@ jobs:
           body[data-tab=hist]{--acc:#D97706;--acc2:#EA580C;--acc-rgb:217,119,6}
           body[data-tab=eng]{--acc:#7C3AED;--acc2:#9333EA;--acc-rgb:124,58,237}
           body[data-tab=about]{--acc:#DB2777;--acc2:#C026D3;--acc-rgb:219,39,119}
+          body[data-tab=ident]{--acc:#0EA5E9;--acc2:#0284C7;--acc-rgb:14,165,233}
           body[data-tab=acc]{--acc:#475569;--acc2:#334155;--acc-rgb:71,85,105}
           header,.dstrip{background:linear-gradient(90deg,var(--acc) 0%,var(--acc2) 100%)!important}
           .dstrip{box-shadow:0 8px 22px rgba(var(--acc-rgb),.30)!important}
@@ -801,12 +802,13 @@ jobs:
           #nav-hist{--c:#D97706;--cr:217,119,6}
           #nav-eng{--c:#7C3AED;--cr:124,58,237}
           #nav-about{--c:#DB2777;--cr:219,39,119}
+          #nav-ident{--c:#0EA5E9;--cr:14,165,233}
           nav button svg{color:var(--c,var(--acc));opacity:.8;transition:transform .15s}
           nav button.on{background:rgba(var(--cr,var(--acc-rgb)),.15);color:var(--c,var(--acc));box-shadow:inset 0 0 0 1px rgba(var(--cr,var(--acc-rgb)),.38)}
           nav button.on svg{opacity:1;transform:translateY(-1px) scale(1.08)}
           @keyframes pgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
           .pg.on{animation:pgIn .22s ease}
-          body[data-tab=bump]{--acc:#C026D3;--acc2:#9333EA;--acc-rgb:192,38,211}
+
           #bSeg{margin-bottom:8px}
 
           /* v5: sửa lỗi ô tìm kiếm không hiện chữ trên iOS */
@@ -847,7 +849,7 @@ jobs:
           <div class="rc"><span class="rcl">↺</span><select id="cRecent" onchange="A.recentLoad()"></select><button class="g s fx" onclick="A.recentLoad(1)">Gần nhất</button></div><small id="cRecentInfo" class="rci"></small>
           <div class="card slim"><small>Đăng / chia sẻ bằng danh tính:</small><div class="seg" id="idSeg2"></div><small id="idSt2" style="display:block;margin-top:4px"></small></div>
           <div class="card sec"><div class="sh"><i class="num">1</i><div><h2>Nội dung</h2><small>Spintax {Xin chào|Chào cả nhà} • nhiều mẫu: ngăn bằng dòng ---</small></div></div>
-          <div id="cShareBox"><div class="row"><input type="text" id="cUrl" placeholder="Dán link bài Facebook cần chia sẻ" oninput="showChk()"><button class="g s fx" onclick="A.chkLink()">✔ Kiểm tra</button></div><div id="cChk" class="chk"></div><select id="cMeth"><option value="link">Chia sẻ bằng link vào nhóm (như app PC)</option><option value="native">Nút Chia sẻ của Facebook (thử nghiệm)</option></select><label class="k"><input type="checkbox" id="cHide" checked> Ẩn link trong bài (giữ khung xem trước)</label></div>
+          <div id="cShareBox"><div class="row"><input type="text" id="cUrl" placeholder="Dán link bài Facebook cần chia sẻ" oninput="showChk()"><button class="g s fx" onclick="A.chkLink()">✔ Kiểm tra</button></div><div id="cChk" class="chk"></div><label class="k"><input type="checkbox" id="cHide" checked> Ẩn link trong bài (giữ khung xem trước)</label></div>
           <textarea id="cTx" placeholder="Viết nội dung bài / caption tại đây..."></textarea><div class="tl"><small id="cLen">0 ký tự</small></div></div>
           <div class="card sec"><div class="sh"><i class="num">2</i><div><h2>Nhóm đăng</h2><small>Nhóm nhiều thành viên chạy trước</small></div><b class="fx" id="cCnt">0 nhóm</b></div>
           <button class="g pickb" onclick="A.campPick()">☰ Chọn nhóm thủ công…</button>
@@ -859,28 +861,12 @@ jobs:
           <div class="card sec"><div class="row"><h3 style="margin:0">Hàng đợi</h3><div id="qCtl"><button class="g s" id="qPauseB" onclick="A.pause()">⏸ Tạm dừng</button><button class="r s" onclick="A.stop()">■ Dừng</button></div><button class="g s fx" onclick="A.retry()">↻ Chạy lại nhóm lỗi</button><button class="g s" onclick="A.removed('all')">🚫 Kiểm tra bài bị gỡ</button></div><div class="grid2" style="margin:6px 0"><button class="s" onclick="A.verifyPub()">🔎 Kiểm tra lại bài đã đăng</button><label class="k" style="margin:0"><input type="checkbox" id="cAV" onchange="S.set.autoVerify2=this.checked;sv()"> Tự kiểm tra sau khi đăng</label></div><div id="cQ"><small>Chưa có hàng đợi.</small></div></div>
           </section>
 
-          <section class="pg" id="pg-bump">
-          <div class="seg" id="bSeg"><button data-s="bp" onclick="A.bseg('bp')">💬 Đẩy bài</button><button data-s="fl" onclick="A.bseg('fl')">🤝 FL chéo</button></div>
-          <div id="bpP">
-          <div class="card slim"><small>Comment vào bài đã đăng để đẩy lên top, thay vì đăng lại nhiều lần (đăng lặp dễ bị admin gỡ bài / Facebook hạn chế).</small>
-          <textarea id="bpTx" placeholder="Nội dung comment. Hỗ trợ {Up|Up up|Đẩy bài}; nhiều mẫu cách nhau bằng dòng ---" oninput="A.bpSave()" style="min-height:84px;margin-top:6px"></textarea>
-          <div class="grid2"><div><small>Cách nhau tối thiểu (giờ)</small><input type="number" id="bpHrs" onchange="A.bpSave();R.bump()"></div><div><small>Tối đa lần/bài/ngày</small><input type="number" id="bpDay" onchange="A.bpSave();R.bump()"></div></div>
-          <div class="grid2"><div><small>Bài đăng trong</small><select id="bpPer" onchange="A.bpSave();R.bump()"><option value="1">Hôm nay</option><option value="3">3 ngày</option><option value="7">7 ngày</option><option value="30">30 ngày</option></select></div><div><small>Tối đa bài / lần chạy</small><input type="number" id="bpMax" onchange="A.bpSave()"></div></div>
-          <div class="grid2"><div><small>Nghỉ giữa bài - min (s)</small><input type="number" id="bpD1" onchange="A.bpSave()"></div><div><small>Nghỉ giữa bài - max (s)</small><input type="number" id="bpD2" onchange="A.bpSave()"></div></div></div>
-          <div class="grid3"><button class="g s" onclick="A.bselAll(1)">Chọn đủ điều kiện</button><button class="g s" onclick="A.bselAll(0)">Bỏ chọn</button><button class="g s" onclick="A.verify()">✔ Lấy link bài</button></div>
-          <div id="bpList" style="margin-top:8px"></div></div>
-          <div id="flP" style="display:none">
-          <div class="card slim"><small>Vào nhóm FL chéo → comment bài → tự bấm “Theo dõi” các tài khoản đã bình luận trong bài đó.</small>
-          <textarea id="flGr" placeholder="Link nhóm FL chéo (mỗi dòng 1 link)" oninput="A.flSave()" style="min-height:70px;margin-top:6px"></textarea>
-          <div class="grid3"><button class="s" onclick="A.flPick()">📋 Chọn từ danh sách</button><button class="g s" onclick="A.flAddSel()">＋ Nhóm đang tích</button><button class="g s" onclick="A.flClr()">Xóa</button></div><small id="flGn"></small></div>
-          <div class="card slim"><textarea id="flTx" placeholder="Nội dung comment, ví dụ: FL chéo nha mn (hỗ trợ {a|b}, nhiều mẫu cách bằng ---)" oninput="A.flSave()" style="min-height:64px"></textarea>
-          <div class="grid3"><div><small>Bài / nhóm</small><input type="number" id="flPosts" onchange="A.flSave()"></div><div><small>FL tối đa / bài (0 = tất cả)</small><input type="number" id="flMaxF" onchange="A.flSave()"></div><div><small>FL tối đa / lần chạy</small><input type="number" id="flMaxR" onchange="A.flSave()"></div></div>
-          <div class="grid3"><div><small>Giới hạn FL / ngày</small><input type="number" id="flDaily" onchange="A.flSave()"></div><div><small>Mỗi FL cách min (s)</small><input type="number" id="flF1" onchange="A.flSave()"></div><div><small>Mỗi FL cách max (s)</small><input type="number" id="flF2" onchange="A.flSave()"></div></div>
-          <div class="grid2"><div><small>Nghỉ giữa nhóm min (s)</small><input type="number" id="flD1" onchange="A.flSave()"></div><div><small>Nghỉ giữa nhóm max (s)</small><input type="number" id="flD2" onchange="A.flSave()"></div></div>
-          <label class="k"><input type="checkbox" id="flAuth" onchange="A.flSave()"> Theo dõi cả người đăng bài</label>
-          <label class="k"><input type="checkbox" id="flRep" onchange="A.flSave()"> Gồm cả người trả lời (mở “Xem câu trả lời”)</label>
-          <button class="g s" style="width:100%;margin-top:6px" onclick="A.flLog()">📜 Lịch sử FL (kiểm tra ai đã được theo dõi)</button>
-          <small id="flDay"></small></div></div>
+          <section class="pg" id="pg-ident">
+          <div class="card"><h2>👤📄 Danh tính thao tác</h2><small>Chọn <b>trang cá nhân</b> hay <b>Fanpage</b> để đăng bài và chia sẻ. Trước mỗi lần chạy, app tự chuyển đúng danh tính đã chọn và kiểm tra kỹ — nếu không đúng thì <b>DỪNG</b>, không đăng nhầm.</small>
+          <div class="seg big" id="idSeg3" style="margin-top:8px"></div>
+          <small id="idSt3" style="display:block;margin-top:6px"></small></div>
+          <div class="card"><h3>Chọn Fanpage</h3><small>Dán link hoặc ID Fanpage rồi bấm “🔎 Nhận diện Fanpage”. Chỉ dùng được Trang mà tài khoản này đang quản trị.</small>
+          <input type="text" id="idUrl" placeholder="Link hoặc ID Fanpage (vd: facebook.com/hieubuaphada)" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:8px"><div class="grid2" style="margin-top:6px"><button class="g" onclick="A.idResolve()">🔎 Nhận diện Fanpage</button><button class="g" onclick="A.idCheck()">✓ Kiểm tra danh tính</button></div></div>
           </section>
           <section class="pg" id="pg-hist"><div class="card slim" id="hCmpC"><div class="seg" id="hCs"></div><div id="hCmp"></div></div><div class="card slim"><div id="hK"></div>
           <div class="seg" id="hS"></div>
@@ -899,8 +885,7 @@ jobs:
 
           <section class="pg" id="pg-acc"><div class="card"><h2 id="aT">Chưa kiểm tra đăng nhập</h2><small>Facebook chạy trong trình duyệt riêng của app, giữ phiên đăng nhập (kể cả mã 2 lớp). iPhone dùng 1 tài khoản tại một thời điểm.</small>
           <button style="width:100%;margin-top:8px" onclick="A.login()">🔑 Đăng nhập Facebook</button><div class="grid2" style="margin-top:6px"><button class="g" onclick="A.chk()">✓ Kiểm tra phiên</button><button class="r" onclick="A.logout()">Đổi tài khoản</button></div></div>
-          <div class="card"><h3>Danh tính khi đăng / chia sẻ</h3><small>Chọn đăng bằng trang cá nhân hay Fanpage. Trước mỗi lần chạy app tự chuyển và kiểm tra; nếu sai danh tính thì DỪNG, không đăng nhầm.</small><div class="seg" id="idSeg"></div>
-          <input type="text" id="idUrl" placeholder="Link hoặc ID Fanpage (vd: facebook.com/hieubuaphada)" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:8px"><div class="grid2" style="margin-top:6px"><button class="g" onclick="A.idResolve()">🔎 Nhận diện Fanpage</button><button class="g" onclick="A.idCheck()">✓ Kiểm tra danh tính</button></div><small id="idSt" style="display:block;margin-top:6px"></small></div>
+          <div class="card"><h3>👤📄 Danh tính thao tác</h3><small id="idSt">Chọn trang cá nhân hay Fanpage để đăng bài / chia sẻ.</small><div class="seg" id="idSeg" style="margin-top:8px"></div><button class="g" style="width:100%;margin-top:8px" onclick="P('ident')">⚙ Thiết lập Fanpage</button></div>
           <div class="card"><h3>Cài đặt chạy</h3><label class="k"><input type="checkbox" id="sBg" onchange="A.saveSet()"> Chạy khi ẩn app / khóa màn hình (âm thanh nền im lặng)</label>
           <label class="k"><input type="checkbox" id="sFb" onchange="A.saveSet()"> Hiện cửa sổ Facebook khi chạy</label>
           <div class="grid2"><div><small>Nghỉ tham gia min (s)</small><input type="number" id="sJ1" onchange="A.saveSet()"></div><div><small>Nghỉ tham gia max (s)</small><input type="number" id="sJ2" onchange="A.saveSet()"></div></div>
@@ -915,7 +900,7 @@ jobs:
           <small>Hỗ trợ cài đặt, báo lỗi và đặt làm thêm tính năng.</small></div></div>
           <div class="card"><h3 style="margin-top:0">Hướng dẫn sử dụng</h3>
           <details open><summary><b>1. Bắt đầu nhanh (5 bước)</b></summary><small>
-          ① Bấm nút trạng thái Facebook ở góc trên bên phải → <b>🔑 Đăng nhập Facebook</b> (hỗ trợ mã 2 lớp). App dùng 1 tài khoản tại một thời điểm, muốn đổi bấm “Đổi tài khoản”.<br>
+          ① Bấm nút trạng thái Facebook ở góc trên bên phải → <b>🔑 Đăng nhập Facebook</b> (hỗ trợ mã 2 lớp). App dùng 1 tài khoản tại một thời điểm, muốn đổi bấm “Đổi tài khoản”. Sau đó vào tab <b>Danh tính</b> chọn <b>👤 Trang cá nhân</b> hoặc <b>📄 Fanpage</b> để thao tác.<br>
           ② Tab <b>Nhóm FB</b> → <b>↻ Đồng bộ nhóm của tôi</b> để lấy danh sách nhóm đang tham gia, sau đó <b>Quét</b> để lấy số thành viên.<br>
           ③ Tab <b>Đăng bài</b> → chọn <b>✎ Đăng bài mới</b> hoặc <b>↪ Chia sẻ bài</b> → nhập nội dung → chọn nhóm.<br>
           ④ Bấm <b>▶ CHẠY</b>. Mỗi nhóm có thanh tiến trình riêng (đang mở nhóm → đang đăng → đang ẩn link…) kèm % hoàn thành.<br>
@@ -1028,7 +1013,7 @@ jobs:
           window.scrollTo(0,0);A.st('Đang mở khung soạn bài',22);const before=A.postLinks();
           let dg=null,clicked=false;
           for(let at=0;at<3&&!dg;at++){window.scrollTo(0,0);await A.sl(500);const okc=await A.click(/^(Bạn viết gì đi|Bạn đang nghĩ gì|Viết gì đó|Tạo bài viết|Viết bài|Đăng gì đó|Write something|What.s on your mind|Create (a public )?post)/i,at?4000:10000,'[role=button],div,span');if(!okc){if(!clicked)return{r:'KHÔNG THẤY Ô SOẠN',d:(notJoined?'nhóm chưa tham gia, không có ô soạn • ':'')+A.labels(24)};break}clicked=true;for(let i=0;i<10&&!dg;i++){await A.sl(500);dg=A.dlg()}}
-          if(!dg)return{r:'KHÔNG MỞ ĐƯỢC KHUNG SOẠN',d:A.labels(24)};if(o.idw&&o.idn){const ln=(dg.innerText||'').split('\n').map(x=>x.trim()).filter(Boolean).filter(x=>!/^(Tạo bài viết|Create post|Create a post)$/i.test(x)).slice(0,6),pn=A.norm(o.idn).slice(0,14),tp=A.norm(ln.join(' '));if(pn&&tp&&!tp.includes(pn))return{r:'SAI DANH TÍNH',d:'⛔ khung soạn đang đăng bằng "'+(ln[0]||'?')+'", không phải Fanpage "'+o.idn+'" (ID '+o.idw+', khung soạn đọc được: '+ln.join(' | ')+')' — app KHÔNG đăng để tránh đăng nhầm.'};if(pn&&!tp&&idSoft)return{r:'SAI DANH TÍNH',d:'⛔ '+idSoft+' — không đọc được tên ở khung soạn nên KHÔNG đăng.'}}
+          if(!dg)return{r:'KHÔNG MỞ ĐƯỢC KHUNG SOẠN',d:A.labels(24)};if(o.idw&&o.idn){const ln=(dg.innerText||'').split('\n').map(x=>x.trim()).filter(Boolean).filter(x=>!/^(Tạo bài viết|Create post|Create a post)$/i.test(x)).slice(0,6),pn=A.norm(o.idn).slice(0,14),tp=A.norm(ln.join(' '));if(pn&&tp&&!tp.includes(pn))return{r:'SAI DANH TÍNH',d:'⛔ khung soạn đang đăng bằng "'+(ln[0]||'?')+'", không phải Fanpage "'+o.idn+'" (ID '+o.idw+', khung soạn đọc được: '+ln.join(' | ')+') — app KHÔNG đăng để tránh đăng nhầm.'};if(pn&&!tp&&idSoft)return{r:'SAI DANH TÍNH',d:'⛔ '+idSoft+' — không đọc được tên ở khung soạn nên KHÔNG đăng.'}}
           A.st('Đang nhập nội dung',38);let ed=null;for(let i=0;i<12&&!ed;i++){dg=A.dlg()||dg;ed=A.editor(dg);if(!ed)await A.sl(500)}
           if(!ed)return{r:'KHÔNG THẤY KHUNG GÕ',d:A.labels(24)};
           const PV='[aria-label*="Xóa bản xem trước"],[aria-label*="Remove preview"],[aria-label="Xóa tệp đính kèm"],[aria-label="Remove attachment"]';
@@ -1083,21 +1068,6 @@ jobs:
           const PEND=/(bài viết của bạn[^.\n]{0,50}(đang )?chờ[^.\n]{0,30}duyệt|(đang chờ|chờ) (quản trị viên |admin )?(phê )?duyệt bài|bài viết (đang )?chờ (được )?(quản trị viên )?(phê )?duyệt|your post (is )?pending|pending (admin )?approval|sẽ hiển thị (công khai )?sau khi[^.\n]{0,40}duyệt|will (be )?(visible|appear)[^.\n]{0,40}approv|đã gửi (để )?(xét|chờ) duyệt|submitted for approval)/i;
           const pend=PEND.test(b2),ev=!!(link||seen);
           return{r:pend?'CHỜ DUYỆT':ev?'OK':'CHƯA XÁC NHẬN',v:(ev&&!pend&&!/chưa khớp/.test(seen))?1:0,link,d:(o.idw?'✓ đã xác nhận danh tính Fanpage trước khi đăng • ':'')+(ev||pend?'':'Facebook đã nhận lệnh đăng, app sẽ tự đối chiếu lại bài trong nhóm • ')+'đã bấm '+sub.d+(hid?' • '+hid:'')+(ehid?' • '+ehid:'')+(seen?' • '+seen:'')}}
-          async function pg_share(A,o){A.st('Đang bấm Chia sẻ → nhóm',30);if(A.blocked())return{r:'BỊ CHẶN'};
-          for(let i=0;i<12&&!document.querySelector('[role=article]');i++)await A.sl(600);window.scrollTo(0,0);await A.sl(400);
-          const idBad=()=>{if(!o||o.idw===undefined)return'';const h=document.documentElement.innerHTML,i0=h.indexOf('CurrentUserInitialData'),b=i0>=0?h.slice(i0,i0+1500):h,g=r=>{const m=b.match(r);return m?m[1]:''};let nm=g(/"NAME":"((?:[^"\\]|\\.)*)"/);try{nm=JSON.parse('"'+nm+'"')}catch(e){}const ids=[g(/"ACCOUNT_ID":"(\d+)"/),g(/"USER_ID":"(\d+)"/)].filter(Boolean);if(!ids.length)return o.idw?'Chưa xác định được danh tính đang dùng ở trang này (cần đúng Fanpage đã chọn)':'';if(o.idw)return ids.includes(String(o.idw))?'':'Facebook đang dùng "'+(nm||'?')+'" (ID '+ids.join('/')+') ở trang này, cần Fanpage ID '+o.idw+' (tên lưu: '+(o.idn||'?')+')';if(o.idu)return ids.includes(String(o.idu))?'':'Facebook đang dùng "'+(nm||'?')+'" (không phải trang cá nhân đã chọn)';return''};{let bad=idBad();for(let k=0;k<4&&bad&&/Chưa xác định được/.test(bad);k++){await A.sl(800);bad=idBad()}if(bad)return{r:'SAI DANH TÍNH',d:'⛔ '+bad+' — app KHÔNG đăng để tránh đăng nhầm.'}}const RXS=/^(Chia sẻ|Share|Gửi nội dung này cho bạn bè hoặc đăng lên trang cá nhân của bạn\.?|Send this to friends or post it on your profile\.?)$/i,RXG=/^(Nhóm|Groups?|Chia sẻ lên nhóm|Chia sẻ vào nhóm|Chia sẻ trong nhóm|Share to a group|Share to group|Share to groups|Share in a group)/i;
-          let sh=false;{const ds=[...document.querySelectorAll('[role=dialog]')].filter(A.vis);if(ds.length)sh=await A.click(RXS,4000,null,0,ds[ds.length-1])}if(!sh)sh=await A.click(RXS,9000);if(!sh)return{r:'KHÔNG THẤY NÚT CHIA SẺ',d:A.labels(25)};await A.sl(1800);
-          let gg=await A.dclick(RXG,5000);if(!gg){await A.click(RXS,3000);await A.sl(1500);gg=await A.dclick(RXG,5000)}
-          if(!gg)return{r:'KHÔNG THẤY MỤC NHÓM',d:A.labels(30)};await A.sl(2000);
-          const q=[...document.querySelectorAll('input[type=search],input[type=text],input:not([type])')].filter(A.vis).pop();if(!q)return{r:'KHÔNG THẤY Ô TÌM NHÓM',d:A.labels(25)};
-          q.focus();document.execCommand('insertText',false,String(o.name||'').slice(0,40));q.dispatchEvent(new Event('input',{bubbles:true}));await A.sl(2500);
-          const nm=String(o.name||'').replace(/\s+/g,' ').toLowerCase().slice(0,18);const pre=document.querySelector('[role=dialog]')?'[role=dialog] ':'';
-          const sels=['[role=button]','[role=option]','[role=radio]','[role=listitem]','[role=checkbox]','div[tabindex]'].map(x=>pre+x).join(',');
-          const cand=[...document.querySelectorAll(sels)].filter(e=>A.vis(e)&&((e.innerText||'').replace(/\s+/g,' ').toLowerCase().includes(nm)));cand.sort((a,b)=>(a.innerText||'').length-(b.innerText||'').length);const it=cand[0];
-          if(!it)return{r:'KHÔNG THẤY NHÓM',d:'tìm "'+String(o.name||'').slice(0,40)+'" • '+A.labels(15)};await A.press(it);await A.sl(1500);
-          if(o.caption){const tb=[...document.querySelectorAll('[role=dialog] [contenteditable=true],[contenteditable=true]')].find(A.vis);if(tb)await A.type(tb,o.caption)}
-          if(!await A.dclick(/^(Đăng|Post|Chia sẻ ngay|Share now)$/i,8000))return{r:'KHÔNG THẤY NÚT ĐĂNG',d:A.labels(25)};await A.sl(4500);
-          if(A.blocked())return{r:'BỊ CHẶN'};const b=(document.body.innerText||'');return{r:/(đang chờ|chờ phê duyệt|pending|sẽ hiển thị sau khi|admin.*approve)/i.test(b)?'CHỜ DUYỆT':'OK'}}
           async function pg_perma2(A){A.reveal();await A.sl(1200);A.reveal();await A.sl(800);const out=[],seen={};document.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]').forEach(a=>{const m=a.href.match(/(https:\/\/www\.facebook\.com\/groups\/[^/?#]+\/(?:posts|permalink)\/\d+)/);if(!m||seen[m[1]])return;seen[m[1]]=1;const art=a.closest('[role=article]');out.push({l:m[1],t:art?(art.innerText||'').replace(/\s+/g,' ').slice(0,700):''})});return out}
           async function pg_perma(A){A.reveal();await A.sl(1200);A.reveal();await A.sl(800);const out=[];document.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]').forEach(a=>{const m=a.href.match(/(https:\/\/www\.facebook\.com\/groups\/[^/?#]+\/(?:posts|permalink)\/\d+)/);if(m&&!out.includes(m[1]))out.push(m[1])});return out.slice(0,3)}
           async function pg_eng(A,P){P=P||{};for(let i=0;i<10&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(1500);window.scrollBy(0,300);await A.sl(900);
@@ -1168,77 +1138,6 @@ jobs:
           const desc=(meta('meta[property="og:description"]')||(art?art.innerText:'')||'').replace(/\s+/g,' ').trim().slice(0,160);
           const hasShare=!!A.find(/^(Chia sẻ|Share|Gửi nội dung này cho bạn bè hoặc đăng lên trang cá nhân của bạn\.?|Send this to friends or post it on your profile\.?)$/i);
           return{href:location.href,gone,login,title,author,desc,hasArticle:!!art,hasShare}}
-          async function pg_comment(A,o){A.st('Đang mở bài viết',10);
-          for(let i=0;i<14&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(1600);
-          if(A.blocked())return{r:'BỊ CHẶN'};
-          const b0=(document.body?document.body.innerText:'').slice(0,5000);
-          if(!o.inline&&/(nội dung này hiện không hiển thị|this content isn.t available|bạn hiện không xem được nội dung này)/i.test(b0)&&!document.querySelector('[role=article]'))return{r:'BÀI KHÔNG CÒN',d:'bài đã xóa hoặc bạn không xem được'};
-          const topArt=a=>!(a.parentElement&&a.parentElement.closest('[role=article]'))&&!/(bình luận|comment)/i.test(a.getAttribute('aria-label')||'');
-          const isBox=e=>{if(!A.vis(e))return false;const at=((e.getAttribute('aria-label')||'')+' '+(e.getAttribute('aria-placeholder')||'')+' '+(e.getAttribute('data-placeholder')||'')).toLowerCase();return !/(trả lời|reply|tìm kiếm|search)/.test(at)&&/(bình luận|comment)/.test(at)};
-          const pickRoot=()=>{if(o.inline){const a=[...document.querySelectorAll('[role=article]')].filter(x=>topArt(x)&&!/(được ghim|pinned)/i.test((x.innerText||'').slice(0,160)))[0];return a||document}
-          const ds=[...document.querySelectorAll('[role=dialog]')].filter(A.vis).reverse();for(const d of ds){if(d.querySelector('[role=article]')||[...d.querySelectorAll('[contenteditable=true]')].some(isBox))return d}return document};
-          let root=pickRoot();
-          const findBox=()=>{root=pickRoot();for(const e of root.querySelectorAll('[contenteditable=true]'))if(isBox(e))return e;return null};
-          let box=findBox();
-          for(let i=0;i<6&&!box;i++){if(i==1||i==3){const b=A.find(/^(Bình luận|Comment|Viết bình luận\.?|Write a comment\.?)$/i,undefined,0,root);if(b)await A.press(b)}await A.sl(900);box=findBox()}
-          if(!box){if(/(đã tắt bình luận|tắt tính năng bình luận|comments are turned off|không thể bình luận)/i.test(document.body.innerText||''))return{r:'TẮT BÌNH LUẬN'};return{r:'KHÔNG THẤY Ô BÌNH LUẬN',d:A.labels(20)}}
-          A.st('Đang nhập bình luận',45);box.scrollIntoView({block:'center'});await A.sl(500);try{box.click()}catch(_){}box.focus();await A.sl(400);
-          if(!await A.fill(box,o.text))return{r:'KHÔNG NHẬP ĐƯỢC',d:'ô bình luận không nhận chữ'};
-          await A.sl(900);A.st('Đang gửi bình luận',70);
-          const probe=A.norm(o.text).slice(0,22),cleared=()=>!A.norm(box.innerText||box.textContent||'').includes(probe);
-          const ent=()=>{const ev={key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true};for(const t of['keydown','keypress','keyup'])box.dispatchEvent(new KeyboardEvent(t,ev))};
-          ent();let sent=false;for(let i=0;i<8&&!sent;i++){await A.sl(500);sent=cleared()}
-          if(!sent){let host=box;for(let i=0;i<7&&host.parentElement;i++)host=host.parentElement;const sb=[...host.querySelectorAll('[role=button],button')].find(x=>A.vis(x)&&/^(Bình luận|Comment|Đăng bình luận|Post comment|Gửi|Send)$/i.test((x.getAttribute('aria-label')||'').trim()));if(sb){await A.press(sb);for(let i=0;i<8&&!sent;i++){await A.sl(500);sent=cleared()}}}
-          if(!sent)return{r:'KHÔNG GỬI ĐƯỢC',d:'đã gõ nhưng chưa gửi được • '+A.labels(14)};
-          await A.sl(2500);if(A.blocked())return{r:'BỊ CHẶN'};
-          const shown=A.norm(document.body.innerText||'').includes(probe);return{r:shown?'OK':'CHƯA XÁC NHẬN',d:shown?'đã gửi bình luận':'đã gửi nhưng chưa thấy hiện trong bài (có thể chờ duyệt)'}}
-          async function pg_fl_posts(A,o){A.st('Đang mở nhóm FL chéo',10);
-          for(let i=0;i<14&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(2400);
-          if(A.blocked())return{r:'BỊ CHẶN'};
-          if(A.find(/^(Tham gia nhóm|Join group)$/,0,900))return{r:'CHƯA VÀO NHÓM'};
-          const RX=/(https:\/\/www\.facebook\.com\/groups\/[^/?#]+\/(?:posts|permalink)\/\d+)/,got=[],seen={},want=o.scan||6;
-          for(let round=0;round<5&&got.length<want;round++){A.reveal();await A.sl(900);
-          for(const art of document.querySelectorAll('[role=article]')){if(art.parentElement&&art.parentElement.closest('[role=article]'))continue;if(/(bình luận|comment)/i.test(art.getAttribute('aria-label')||''))continue;if(/(được ghim|pinned)/i.test((art.innerText||'').slice(0,160)))continue;
-          for(const a of art.querySelectorAll('a[href*="/posts/"],a[href*="/permalink/"]')){const m=a.href.match(RX);if(m&&!seen[m[1]]){seen[m[1]]=1;got.push({link:m[1],txt:(art.innerText||'').replace(/\s+/g,' ').slice(0,60)});break}}
-          if(got.length>=want)break}
-          window.scrollBy(0,1500);await A.sl(900)}
-          if(!got.length&&!document.querySelector('[role=article]'))return{r:'KHÔNG THẤY BÀI',d:A.labels(14)};return{r:'OK',posts:got,inline:!got.length}}
-
-          async function pg_commenters(A,o){window.__FLSTOP=0;A.st('Đang đọc danh sách người bình luận',8);await A.sl(1200);
-          const MORE=/^(Xem thêm bình luận|Xem các bình luận trước|Xem bình luận trước|View more comments|View previous comments)$/i,REP=/^(Xem (tất cả )?\d+ câu trả lời|Xem câu trả lời|View (all )?\d+ repl(y|ies))$/i;
-          const max=o.max>0?o.max:300,t0=Date.now(),limit=o.tmax||240000,seen={},out=[];
-          let root=document;for(const d of[...document.querySelectorAll('[role=dialog]')].filter(A.vis).reverse()){if(d.querySelector('[role=article]')){root=d;break}}
-          const SKIP=/^(groups|watch|friends|pages|marketplace|gaming|events|reel|reels|stories|help|policies|settings|notifications|bookmarks|messages|login|ads|business|privacy|photo|video|videos|share|hashtag|search|r\.php|legal|about|careers|developers|directory|latest|members|people|photos|permalink\.php|story\.php|posts|l\.php)$/i;
-          const prof=h=>{try{const u=new URL(h);if(!/(^|\.)facebook\.com$/.test(u.hostname))return'';if(u.pathname=='/profile.php'){const id=u.searchParams.get('id');return id?'https://www.facebook.com/profile.php?id='+id:''}const p=u.pathname.replace(/^\/|\/$/g,'');if(!p||p.includes('/')||SKIP.test(p))return'';return'https://www.facebook.com/'+p}catch(e){return''}};
-          const own=String(o.self||'');
-          const collect=()=>{root.querySelectorAll('[role=article]').forEach(a=>{const lb=a.getAttribute('aria-label')||'';if(!/^(Bình luận|Phản hồi|Comment|Reply)/i.test(lb))return;
-          for(const x of a.querySelectorAll('a[href]')){const nm=((x.innerText||'')+'').trim().split('\n')[0];if(!nm||nm.length>60||/^(Thích|Phản hồi|Trả lời|Chia sẻ|Like|Reply|Share|Theo dõi|Follow)$/i.test(nm)||/^\d+\s*(giây|phút|giờ|ngày|tuần|tháng|năm|s|m|h|d|w|y)$/i.test(nm))continue;
-          const u=prof(x.href);if(!u)continue;if(own&&u.includes(own))break;if(!seen[u]){seen[u]=1;out.push({name:nm,url:u})}break}})};
-          const pane=()=>{const last=[...root.querySelectorAll('[role=article]')].pop();let n=last||root;for(let i=0;i<40&&n&&n.nodeType==1&&n!==document.documentElement;i++,n=n.parentElement){if(n.scrollHeight>n.clientHeight+60&&/(auto|scroll)/.test(getComputedStyle(n).overflowY))return n}return document.scrollingElement||document.documentElement};
-          const click=async rx=>{for(const e of root.querySelectorAll('[role=button],button,span')){const t=((e.innerText||'')+'').trim();if(t&&t.length<=40&&rx.test(t)&&A.vis(e)&&!e.dataset.cmd){e.dataset.cmd='1';await A.press(e);return true}}return false};
-          let idle=0;
-          for(let round=0;round<160&&out.length<max&&!window.__FLSTOP&&Date.now()-t0<limit;round++){const n0=out.length;collect();A.st('Đã đọc '+out.length+' người bình luận (vòng '+(round+1)+')',Math.min(90,8+round));if(out.length>=max)break;
-          let moved=false;if(o.replies&&await click(REP)){await A.sl(800);moved=true}
-          const mb=[...root.querySelectorAll('[role=button],button,span')].find(e=>{const t=((e.innerText||'')+'').trim();return t&&t.length<=40&&MORE.test(t)&&A.vis(e)});if(mb){await A.press(mb);await A.sl(1700);moved=true}
-          const p=pane(),st=p.scrollTop;p.scrollBy(0,1100);await A.sl(1200);collect();
-          if(out.length===n0&&!moved&&p.scrollTop===st){idle++;if(idle>=3)break}else if(out.length===n0){idle++;if(idle>=5)break}else idle=0}
-          if(!out.length)return{r:'KHÔNG THẤY BÌNH LUẬN',d:A.labels(14)};return{r:'OK',people:out.slice(0,max)}}
-          async function pg_pfollow(A,o){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(1800);
-          if(A.blocked())return{r:'BỊ CHẶN'};
-          const body=(document.body?document.body.innerText:'').slice(0,1500);
-          if(/(nội dung này hiện không hiển thị|trang này không hiển thị|this content isn.t available|this page isn.t available)/i.test(body)&&!document.querySelector('[role=article]'))return{r:'KHÔNG VÀO ĐƯỢC TRANG'};
-          const FOL=/^(Theo dõi|Follow)$/i,ING=/^(Đang theo dõi|Following)$/i;
-          const txt=e=>(((e.getAttribute('aria-label')||'')+'').trim()||((e.innerText||'')+'').trim());
-          const all=()=>[...document.querySelectorAll('[role=button],button,a,[role=menuitem]')].filter(e=>A.vis(e)&&!e.closest('[role=article]'));
-          let b=all().find(e=>FOL.test(txt(e)));
-          if(!b&&all().some(e=>ING.test(txt(e))))return{r:'ĐÃ THEO DÕI TRƯỚC'};
-          if(!b){const mo=all().find(e=>/^(Xem thêm|See more|Thêm|More|Xem tùy chọn khác|Hành động khác|More actions)$/i.test((e.getAttribute('aria-label')||'').trim()));
-          if(mo){await A.press(mo);await A.sl(1100);b=[...document.querySelectorAll('[role=menuitem]')].filter(A.vis).find(e=>FOL.test(txt(e)))}}
-          if(!b)return{r:'KHÔNG CÓ NÚT THEO DÕI',d:all().map(txt).filter(Boolean).slice(0,10).join(' | ')};
-          await A.press(b);await A.sl(1500);
-          const ok=!b.isConnected||!FOL.test(txt(b))||all().some(e=>ING.test(txt(e)));
-          return{r:ok?'OK':'KHÔNG XÁC NHẬN'}}
-
           async function pg_switch(A,o){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(1200);const pn=A.norm(o.name||'').slice(0,24);if(!pn)return{r:'LỖI',d:'chưa biết tên Fanpage'};const av=await A.click(/^(Trang cá nhân của bạn|Your profile|Tài khoản|Account|Account Controls and Settings)$/i,8000,'[role=button],div[aria-label],span[aria-label]');if(!av)return{r:'LỖI',d:'không thấy nút avatar • '+A.labels(20)};await A.sl(1500);const find=()=>{const c=[...document.querySelectorAll('[role=dialog] [role=button],[role=menu] [role=menuitem],[role=menu] [role=button],[role=dialog] [role=listitem],[role=dialog] a,[role=menu] a,div[role=button]')].filter(e=>A.vis(e)&&A.norm(e.innerText||'').includes(pn));c.sort((a,b)=>(a.innerText||'').length-(b.innerText||'').length);return c[0]};let it=find();if(!it){await A.click(/^(Xem tất cả trang cá nhân|See all profiles|Xem tất cả hồ sơ)/i,4000);await A.sl(1500);it=find()}if(!it)return{r:'LỖI',d:'không thấy Trang "'+o.name+'" trong danh sách chuyển • '+A.labels(25)};await A.press(it);await A.sl(2500);await A.click(/^(Chuyển|Switch|Tiếp tục|Continue)$/i,2500);return{r:'OK'}}async function pg_ident(A){for(let i=0;i<10&&document.readyState!=='complete';i++)await A.sl(400);await A.sl(600);const h=document.documentElement.innerHTML,i=h.indexOf('CurrentUserInitialData'),b=i>=0?h.slice(i,i+1500):h;const g=r=>{const m=b.match(r);return m?m[1]:''};let nm=g(/"NAME":"((?:[^"\\]|\\.)*)"/);try{nm=JSON.parse('"'+nm+'"')}catch(e){}return{acc:g(/"ACCOUNT_ID":"(\d+)"/),user:g(/"USER_ID":"(\d+)"/),name:nm}}
           async function pg_pageinfo(A){for(let i=0;i<12&&document.readyState!=='complete';i++)await A.sl(500);await A.sl(1500);const h=document.documentElement.innerHTML,viewer=(h.match(/"USER_ID":"(\d+)"/)||[])[1]||'',c={};
           for(const[rx,w]of[[/fb:\/\/page\/\?id=(\d+)/g,5],[/"pageID":"(\d+)"/g,3],[/"page_id":"(\d+)"/g,2],[/"delegate_page_id":"(\d+)"/g,3],[/"entity_id":"(\d+)"/g,1],[/"profile_owner":"(\d+)"/g,2]]){let m;while((m=rx.exec(h)))c[m[1]]=(c[m[1]]||0)+w}
@@ -1246,39 +1145,6 @@ jobs:
           let name=((h.match(/<meta property="og:title" content="([^"]+)"/)||[])[1]||'').replace(/&amp;/g,'&').replace(/\s*[|\-–]\s*(Facebook|Meta).*$/i,'').replace(/^\(\d+\+?\)\s*/,'').trim();
           if(!name||/^(quản lý trang|facebook)$/i.test(name)){const hs=[...document.querySelectorAll('[role=main] h1,h1')].map(x=>(x.innerText||'').trim()).filter(t=>t&&t.length<80&&!/^(quản lý trang|thông báo|trang)$/i.test(t));name=hs[0]||''}
           return{id,name}}
-          async function pg_follow(A,o){window.__FLSTOP=0;A.st('Đang đọc danh sách bình luận',8);await A.sl(1500);
-          const MORE=/^(Xem thêm bình luận|Xem các bình luận trước|Xem bình luận trước|View more comments|View previous comments)$/i,REP=/^(Xem (tất cả )?\d+ câu trả lời|Xem câu trả lời|View (all )?\d+ repl(y|ies))$/i,FOL=/^(Theo dõi|Follow)$/i;
-          const out={r:'OK',followed:0,found:0,failed:0,people:[]},max=o.max>0?o.max:1e9;
-          const topArt=a=>!(a.parentElement&&a.parentElement.closest('[role=article]'))&&!/(bình luận|comment)/i.test(a.getAttribute('aria-label')||'');
-          const hasBox=d=>[...d.querySelectorAll('[contenteditable=true]')].some(e=>/(bình luận|comment)/i.test((e.getAttribute('aria-label')||'')+' '+(e.getAttribute('aria-placeholder')||'')));
-          const pickRoot=()=>{if(o.inline){const a=[...document.querySelectorAll('[role=article]')].filter(x=>topArt(x)&&!/(được ghim|pinned)/i.test((x.innerText||'').slice(0,160)))[0];return a||document}
-          const ds=[...document.querySelectorAll('[role=dialog]')].filter(A.vis).reverse();for(const d of ds){if(d.querySelector('[role=article]')||hasBox(d))return d}return document};
-          const isCm=e=>{const a=e.closest('[role=article]');if(!a)return false;if(/(bình luận|comment)/i.test(a.getAttribute('aria-label')||''))return true;return !!(a.parentElement&&a.parentElement.closest('[role=article]'))};
-          const scan=()=>{const root=pickRoot(),raw=[];for(const e of root.querySelectorAll('[role=button],button,a,span')){if(!A.vis(e))continue;let ok=false;for(const x of[e.getAttribute('aria-label'),e.innerText]){const t=((x||'')+'').trim();if(t&&t.length<=12&&FOL.test(t)){ok=true;break}}if(ok)raw.push(e)}
-          const leaf=raw.filter(e=>!raw.some(q=>q!==e&&e.contains(q))).map(e=>e.closest('[role=button],button,a')||e),uniq=[...new Set(leaf)];
-          let cm=uniq.filter(isCm),au=uniq.filter(e=>!isCm(e));if(!cm.length&&uniq.length>1){cm=uniq.slice(1);au=uniq.slice(0,1)}return{cm,au}};
-          const nameOf=e=>{const a=e.closest('[role=article]')||e.parentElement;let nm='',url='';if(a){const lk=[...a.querySelectorAll('a[href]')].find(x=>{const t=(x.innerText||'').trim();return t&&t.length<70&&!/^(theo dõi|follow|trả lời|chia sẻ|thích|reply|like|share)$/i.test(t)&&!/^\d+\s*(giờ|phút|ngày|tuần|năm|h|m|d|w)$/i.test(t)});
-          if(lk){nm=(lk.innerText||'').trim().split('\n')[0];url=String(lk.href||'').split('?')[0]}
-          if(!nm){nm=((a.getAttribute&&a.getAttribute('aria-label'))||'').replace(/^(Bình luận của|Phản hồi bình luận của|Comment by|Reply by)\s*/i,'').replace(/\s+\d+\s*(giờ|phút|ngày|tuần|năm|hr|min|h|m|d|w|y)\b.*$/i,'').trim()}}return{name:nm.slice(0,60),url:url.slice(0,200)}};
-          const doFollow=async b=>{const who=nameOf(b);out.found++;b.dataset.fld='1';await A.press(b);await A.sl(1300);const txt=(b.isConnected?(b.innerText||b.getAttribute('aria-label')||''):'').trim(),ok=!b.isConnected||!FOL.test(txt);if(ok)out.followed++;else out.failed++;out.people.push({name:who.name,url:who.url,ok});return ok};
-          const pane=()=>{const root=pickRoot(),last=[...root.querySelectorAll('[role=article]')].pop();let n=last||root;for(let i=0;i<40&&n&&n.nodeType==1&&n!==document.documentElement;i++,n=n.parentElement){if(n.scrollHeight>n.clientHeight+60&&/(auto|scroll)/.test(getComputedStyle(n).overflowY))return n}return document.scrollingElement||document.documentElement};
-          const cnt=()=>pickRoot().querySelectorAll('[role=article]').length;
-          if(o.author){const b=scan().au.find(x=>!x.dataset.fld);if(b){await doFollow(b);await A.sl(1500+Math.random()*2000)}}
-          let idle=0;const t0=Date.now(),limit=o.tmax||840000;
-          for(let round=0;round<150&&out.followed<max&&!window.__FLSTOP&&Date.now()-t0<limit;round++){
-          const c0=cnt();let did=0;const sc=scan();A.st('Vòng '+(round+1)+' • '+c0+' bình luận đã tải • '+sc.cm.length+' nút Theo dõi • đã theo dõi '+out.followed,Math.min(90,8+round*2));
-          for(const b of sc.cm){if(out.followed>=max||window.__FLSTOP)break;if(b.dataset.fld)continue;if(A.blocked()){out.r='BỊ CHẶN';return out}
-          A.st('Theo dõi '+out.followed+(max<1e9?'/'+max:'')+' người',Math.min(95,10+Math.round(out.followed/Math.max(1,Math.min(max,300))*85)));
-          await doFollow(b);did++;await A.sl((o.f1||2000)+Math.random()*Math.max(0,(o.f2||5000)-(o.f1||2000)))}
-          if(out.followed>=max||window.__FLSTOP)break;
-          const root=pickRoot();
-          if(o.replies){for(const e of root.querySelectorAll('[role=button]')){const t=(e.innerText||'').trim();if(t.length<=40&&REP.test(t)&&A.vis(e)&&!e.dataset.rep){e.dataset.rep='1';await A.press(e);await A.sl(900);break}}}
-          const mb=A.find(MORE,undefined,0,root);if(mb){await A.press(mb);await A.sl(1700)}
-          const p=pane();p.scrollBy(0,1000);await A.sl(1300);
-          const grew=cnt()>c0;
-          if(!did&&!sc.cm.length&&!grew){idle++;if(idle>=3)break}else idle=0;
-          if(!out.found&&!did&&round>=5){out.r='KHÔNG THẤY NÚT THEO DÕI';out.d='Đã tải '+cnt()+' bình luận nhưng không thấy nút “Theo dõi” cạnh tên người bình luận. Nút có trên trang: '+A.labels(14);return out}}
-          if(!out.found){out.r=cnt()?'KHÔNG THẤY NÚT THEO DÕI':'KHÔNG THẤY BÌNH LUẬN';out.d='Đã tải '+cnt()+' bình luận, không thấy nút “Theo dõi”. Nút có trên trang: '+A.labels(14)}return out}
           async function sl(ms){const end=Date.now()+ms;while(Date.now()<end&&!T.stop)await W(Math.min(250,end-Date.now()));}
           async function holdPause(q){const pv=q&&q.st;T.held=true;if(q)q.st='TẠM DỪNG';R.queue();prog('⏸ Đã tạm dừng — bấm ▶ Tiếp tục để chạy nhóm kế tiếp',null,null,true);tick();try{await Br().setBarTitle({title:'Tạm dừng'})}catch(e){}
            while(T.pause&&!T.stop)await W(350);T.held=false;if(q&&!T.stop)q.st=pv;R.queue();tick()}
@@ -1376,7 +1242,7 @@ jobs:
             lastRes='Đã xử lý tham gia '+list.length+' nhóm'},{total:list.length})}
           /* ---------- chiến dịch ---------- */
           function campRead(){return{name:'',act:$('#cAct').value,url:$('#cUrl').value.trim(),text:$('#cTx').value,mode:$('#cMode').value,min:Math.max(0,+$('#cMin').value||0),max:Math.max(0,+$('#cMax').value||0),rj:$('#cRj').checked,rs:$('#cRs').checked,rjv:2,d1:+$('#cD1').value||60,d2:+$('#cD2').value||120,wait:+$('#cW').value||6,meth:($('#cMeth')||{}).value||'link',hide:($('#cHide')||{checked:true}).checked,sel:[...CSEL]}}
-          function campWrite(c){$('#cAct').value=c.act||'post';$('#cUrl').value=c.url||'';$('#cTx').value=c.text||'';$('#cMode').value=c.mode||'Chọn thủ công';$('#cMin').value=c.min||0;$('#cMax').value=c.max||0;$('#cRj').checked=(c.rjv===2)?!!c.rj:false;$('#cRs').checked=!!c.rs;$('#cD1').value=c.d1||60;$('#cD2').value=c.d2||120;$('#cW').value=c.wait||6;$('#cMeth').value=c.meth||'link';$('#cHide').checked=c.hide!==false;CSEL=new Set(c.sel||[]);A.campUi()}
+          function campWrite(c){$('#cAct').value=c.act||'post';$('#cUrl').value=c.url||'';$('#cTx').value=c.text||'';$('#cMode').value=c.mode||'Chọn thủ công';$('#cMin').value=c.min||0;$('#cMax').value=c.max||0;$('#cRj').checked=(c.rjv===2)?!!c.rj:false;$('#cRs').checked=!!c.rs;$('#cD1').value=c.d1||60;$('#cD2').value=c.d2||120;$('#cW').value=c.wait||6;const _cm=$('#cMeth');if(_cm)_cm.value=c.meth||'link';$('#cHide').checked=c.hide!==false;CSEL=new Set(c.sel||[]);A.campUi()}
           function campReason(g,c){let mn=c.min,mx=c.max;if(mx&&mn&&mx<mn)[mn,mx]=[mx,mn];const n=mnum(g),st=String(g.scan_status||'').toUpperCase(),jn=String(g.membership_status||'').toUpperCase(),cv=!!g.member_count_verified&&n>0;
            if(c.rj&&!idPage()&&(jn!='ĐÃ THAM GIA'||!g.membership_verified))return'not_joined';if(c.rs&&!['OK','ĐỒNG BỘ OK'].includes(st))return'not_scanned';if(mn>0||mx>0){if(!cv)return'count_unverified';if(mn>0&&n<mn)return'under_min';if(mx>0&&n>mx)return'over_max'}return''}
           function campGroups(c){let base=c.mode=='Theo thành viên'?S.groups:S.groups.filter(g=>c.sel.includes(gk(g.url)));{const bl=blockedKeys();base=base.filter(g=>!bl.has(gk(g.url)))}const seen=new Set();return base.filter(g=>campReason(g,c)==''&&!seen.has(gk(g.url))&&seen.add(gk(g.url))).sort((a,b)=>mnum(b)-mnum(a)||String(a.name).localeCompare(b.name))}
@@ -1386,16 +1252,17 @@ jobs:
           function postedKeys(c){const s=new Set();if(c.act!='share')return s;const k=srcKey(c.url);if(!k)return s;for(const h of S.hist){if(h.kind=='Chia sẻ'&&h.gurl&&h.src&&(sOK(h.status)||sPend(h.status))&&srcKey(h.src)==k)s.add(gk(h.gurl))}return s}
           function campRun(){const c=campRead(),share=c.act=='share';if(share){const inf=shareInfo(c.url);if(!inf.ok)return alert('Link bài gốc chưa đúng: '+inf.why+'.\nHãy dán link một bài viết cụ thể (bấm Chia sẻ → Sao chép liên kết) rồi bấm “Kiểm tra”.');if(inf.clean!==c.url){c.url=inf.clean;$('#cUrl').value=inf.clean}}if(!share&&!c.text.trim())return alert('Nội dung bài đăng đang trống.');
            let gs=campGroups(c);if(!gs.length){const d=campDiag(c);return alert('Không có group nào vượt qua bộ lọc.\n\nChưa xác minh tham gia: '+d.not_joined+'\nChưa quét OK: '+d.not_scanned+'\nChưa xác minh số TV: '+d.count_unverified+'\nDưới ngưỡng: '+d.under_min+'\nTrên ngưỡng: '+d.over_max)}
+           const idm=(((S.set.id||{}).mode)||'personal');if(idm=='page'&&!(S.set.id||{}).pid){P('ident');return alert('⚠ Chưa nhận diện Fanpage.\nVào tab “Danh tính” → nhập link Fanpage → bấm “🔎 Nhận diện Fanpage”, rồi bấm CHẠY lại.')}
            let skippedDup=0;
            const nj0=gs.filter(g=>!(g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified)).length;
           const rmL=gs.filter(g=>rmGet(gk(g.url))&&rmGet(gk(g.url)).st=='BỊ GỠ');if(rmL.length&&!confirm('🚫 '+rmL.length+' nhóm ĐÃ GỠ BÀI của bạn lần trước:\n'+rmL.slice(0,12).map(g=>'• '+g.name).join('\n')+(rmL.length>12?'\n… và '+(rmL.length-12)+' nhóm khác':'')+'\n\nVẫn đăng vào các nhóm này? (Bấm Hủy để quay lại bỏ chọn chúng)'))return;
-          if(!confirm((share?'Chia sẻ':'Đăng bài')+' vào '+gs.length+' nhóm'+(skippedDup?' (bỏ qua '+skippedDup+' nhóm đã chia sẻ)':'')+(nj0?'\n⚠ '+nj0+' nhóm CHƯA tham gia/chưa xác minh — vẫn thử đăng, nhóm nào không có ô soạn sẽ báo ĐỎ.':'')+'?\nNhóm nhiều thành viên chạy trước. Nghỉ '+c.d1+'-'+c.d2+'s/nhóm.'))return;
+          if(!confirm((share?'Chia sẻ':'Đăng bài')+' vào '+gs.length+' nhóm\nDanh tính: '+idLabel()+(skippedDup?' (bỏ qua '+skippedDup+' nhóm đã chia sẻ)':'')+(nj0?'\n⚠ '+nj0+' nhóm CHƯA tham gia/chưa xác minh — vẫn thử đăng, nhóm nào không có ô soạn sẽ báo ĐỎ.':'')+'?\nNhóm nhiều thành viên chạy trước. Nghỉ '+c.d1+'-'+c.d2+'s/nhóm.'))return;
            rememberCamp(c);QUEUE=gs.map(g=>({g:gk(g.url),name:g.name,st:'CHỜ',note:''}));R.queue();S.run={c:Object.assign({},c,{mode:'Chọn thủ công'}),keys:gs.map(g=>gk(g.url)),done:[],t:Date.now()};sv(true);const name=(share?'Chia sẻ ':'Đăng bài ')+gs.length+' nhóm';
            return task(name,async()=>{let ok=0,bad=0,blk=0;const stat={};
             for(let i=0;i<gs.length&&!T.stop;i++){try{await idEnsure(i==0)}catch(e){L('⛔ '+(e.message||e));lastRes='Dừng: '+(e.message||e);toast('Dừng: sai danh tính');alert('Dừng để tránh đăng nhầm danh tính:\n'+(e.message||e));T.stop=true;break}try{const g=gs[i],q=QUEUE[i];if(T.pause)await holdPause(q);if(T.stop)break;q.st='ĐANG CHẠY';q.stage='Đang mở nhóm';q.pct=5;T.frac=.05;R.queue();prog(g.name,i,gs.length);let r='LỖI',link='',err='',dbg='';const njoin=!(g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified);
              G_CAP='';let stopW=()=>{};const why=campReason(g,c);if(why){r='SKIPPED_FILTER';err='BỘ LỌC: '+why}else{
               stopW=stageWatch(q,i,gs.length);try{const t0=Date.now();let o;const linkPost1=async()=>{const cap=pickContent(c.text);G_CAP=cap;q.stage='Đang mở nhóm';q.pct=6;R.queue();await nav(g.url,2200);q.stage='Đã mở nhóm';q.pct=10;T.frac=.1;R.queue();return await run(pg_post,{text:share?((cap?cap+'\n\n':'')+c.url):cap,pk:cap,wait:c.wait,prev:share&&c.hide===false?6:0,hide:share&&c.hide!==false,hurl:share?c.url:'',any:true,...idArg()},160)};const linkPost=async()=>{let rr=await linkPost1();for(let k=0;k<3&&rr&&rr.r=='SAI DANH TÍNH';k++){L('⚠ Facebook đổi danh tính khi vào nhóm → đặt lại '+idLabel()+' (lần '+(k+1)+')');if(k==0){try{await idForce()}catch(e){L('⛔ '+(e.message||e))}}else{L('Chuyển sang Fanpage bằng menu Facebook (như làm tay)');try{if(k==1)await nav('https://www.facebook.com/',1500);else await nav(g.url,2200);await run(pg_switch,{name:(S.set.id||{}).pname||''},60)}catch(e){}await W(3500)}rr=await linkPost1()}return rr};
-          if(share&&c.meth=='native'){await nav(c.url,3000);o=await run(pg_share,{name:g.name,caption:pickContent(c.text),...idArg()},120);if(!/^(OK|CHỜ DUYỆT|BỊ CHẶN)$/.test(o.r)){L('Nút Chia sẻ lỗi ('+o.r+') → thử chia sẻ bằng link');const o2=await linkPost();o2.d='[nút Chia sẻ: '+o.r+'] '+(o2.d||'');o=o2}}else{o=await linkPost()}
+          o=await linkPost()
           stopW();r=o.r;dbg=o.d||'';link=o.link||'';q.v=!!o.v;if(njoin&&!idPage())dbg='⚠ CHƯA THAM GIA nhóm — vẫn thử đăng'+(dbg?' • '+dbg:'')
                if(r=='OK'||r=='CHỜ DUYỆT'||r=='CHƯA XÁC NHẬN'){ok++;if(r!='OK')err=r+(dbg?' • '+dbg:'')}else{bad++;err=r+(dbg?' • '+dbg:'')}}catch(e){stopW();bad++;err=e.message;r='LỖI'}}
              stopW();q.stage='';q.pct=100;T.frac=0;q.st=r=='OK'?'THÀNH CÔNG':r=='CHỜ DUYỆT'?'CHỜ DUYỆT':r=='CHƯA XÁC NHẬN'?'CHƯA XÁC NHẬN':r=='SKIPPED_FILTER'?'BỎ QUA':'LỖI';q.note=err||(njoin&&!idPage()&&r!='SKIPPED_FILTER'?'⚠ chưa tham gia nhóm — vẫn thử đăng':'');q.link=link||'';q.gurl=g.url;R.queue();L((share?'Chia sẻ':'Đăng')+': '+g.name+' → '+r);
@@ -1408,9 +1275,9 @@ jobs:
           function campDiag(c){const d={not_joined:0,not_scanned:0,count_unverified:0,under_min:0,over_max:0};(c.mode=='Theo thành viên'?S.groups:S.groups.filter(g=>c.sel.includes(gk(g.url)))).forEach(g=>{const r=campReason(g,c);if(r)d[r]++});return d}
           /* ---------- lịch sử / tương tác ---------- */
 
-          let ID_CUR=null;let LAST_UID='';function idPage(){const I=S.set&&S.set.id;return !!(I&&I.mode=='page'&&I.pid)}async function idForce(){const I=S.set.id||{mode:'keep'};if(I.mode=='keep')return;const want=I.mode=='page'?String(I.pid||''):'';await Br().setIdentity({pageId:want});await nav('https://www.facebook.com/',1800);const s=await Br().session();if(String(s.iuser||'')!==want)throw new Error('Không đặt lại được danh tính '+(want?'Fanpage':'cá nhân'))}function idArg(){const I=S.set.id||{mode:'keep'};if(I.mode=='page'&&I.pid)return{idw:String(I.pid),idn:I.pname||''};if(I.mode=='personal'){const u=(S.acc&&S.acc.uid)||LAST_UID;if(u)return{idw:'',idu:String(u)}}return{}}
-          function idLabel(){const I=S.set.id||{mode:'keep'};if(I.mode=='page')return'📄 '+(I.pname||'Fanpage');if(I.mode=='personal')return'👤 '+((ID_CUR&&ID_CUR.mode=='personal'&&ID_CUR.name)||'Trang cá nhân');return''}
-          async function idEnsure(deep){const I=S.set.id||{mode:'keep'};if(I.mode=='keep')return true;const want=I.mode=='page'?String(I.pid||''):'';
+          let ID_CUR=null;let LAST_UID='';function idPage(){const I=S.set&&S.set.id;return !!(I&&I.mode=='page'&&I.pid)}async function idForce(){const I=S.set.id||{mode:'personal'};const want=I.mode=='page'?String(I.pid||''):'';await Br().setIdentity({pageId:want});await nav('https://www.facebook.com/',1800);const s=await Br().session();if(String(s.iuser||'')!==want)throw new Error('Không đặt lại được danh tính '+(want?'Fanpage':'cá nhân'))}function idArg(){const I=S.set.id||{mode:'personal'};if(I.mode=='keep')I.mode='personal';if(I.mode=='page'&&I.pid)return{idw:String(I.pid),idn:I.pname||''};if(I.mode=='personal'){const u=(S.acc&&S.acc.uid)||LAST_UID;if(u)return{idw:'',idu:String(u)}}return{}}
+          function idLabel(){const I=S.set.id||{mode:'personal'};if(I.mode=='keep')I.mode='personal';if(I.mode=='page')return'📄 '+(I.pname||'Fanpage');if(I.mode=='personal')return'👤 '+((ID_CUR&&ID_CUR.mode=='personal'&&ID_CUR.name)||'Trang cá nhân');return''}
+          async function idEnsure(deep){const I=S.set.id||{mode:'personal'};if(I.mode=='keep')I.mode='personal';const want=I.mode=='page'?String(I.pid||''):'';
           if(I.mode=='page'&&!want)throw new Error('Chưa nhận diện Fanpage — vào Tài khoản → Danh tính để nhập link Fanpage.');
           let s=await Br().session();const cur=String(s.iuser||'');if(s&&s.uid)LAST_UID=String(s.uid);
           if(cur===want&&!deep)return true;
@@ -1530,7 +1397,7 @@ jobs:
           function swWrap(g,html){const k=esc(gk(g.url));return'<div class="sw" data-k="'+k+'"><div class="swa"><button class="r s swx" onclick="A.swAsk(this)">Xóa</button><span class="swq"><small>Xóa nhóm?</small><button class="r s" onclick="A.swYes(this)">Yes</button><button class="g s" onclick="A.swNo(this)">No</button></span></div>'+html+'</div>'}
           function gItem(g,rank,sel,onchg){const m=String(g.membership_status||'KHÔNG XÁC MINH').toUpperCase(),sc=String(g.scan_status||'').toUpperCase(),tone=g.post_block?'er':(sc=='LỖI'||sc=='CẦN ĐĂNG NHẬP')?'er':m=='KHÔNG XÁC MINH'?'uv':['OK','ĐỒNG BỘ OK'].includes(sc)?'ok':'';const n=mnum(g);
            const td=todayMap()[gk(g.url)];return'<label class="gi '+tone+(td?' done':'')+(g.post_block?' pbk':'')+'"><input type="checkbox" '+(sel?'checked':'')+' onchange="'+onchg+'"><div class="gb"><b class="lk" data-u="'+esc(g.url)+'" onclick="A.openG(this.dataset.u,event)">'+rank+'. '+esc(g.name||'Chưa quét')+' ↗</b><small>'+(g.members||(n?n.toLocaleString('vi'):'—'))+' thành viên • '+esc(String(g.url||'').replace('https://www.facebook.com/groups/','').replace(/\/$/,''))+'</small><div class="chips">'+(td?chip('✔ HÔM NAY: '+td.t,'ok'):'')+chip(m,m=='ĐÃ THAM GIA'?'ok':m=='CHƯA THAM GIA'?'bl':'wt')+(g.post_block?chip('⛔ '+g.post_block.r,'er'):'')+rmChip(gk(g.url))+((sc&&sc!='OK'&&sc!='ĐỒNG BỘ OK')?chip(g.scan_status||'Chưa quét',sc=='LỖI'?'er':''):'')+((g.approval_status||g.post_approval)?chip('DUYỆT BÀI: '+(g.approval_status||g.post_approval)):'')+(m!='ĐÃ THAM GIA'&&m!='ĐÃ GỬI YÊU CẦU'?'<button class="s jb" data-u="'+esc(g.url)+'" onclick="A.joinOne(this.dataset.u,event)">＋ Tham gia</button>':'')+'</div>'+(g.admins&&g.admins.length?'<div class="adm">👤 '+g.admins.slice(0,3).map(a=>esc(a.name)).join(', ')+(g.admins.length>3?' +'+(g.admins.length-3):'')+' <button class="g s" onclick="event.preventDefault();event.stopPropagation();A.admShow(\''+esc(gk(g.url))+'\')">Xem admin</button></div>':'')+(g.post_block?'<span class="note" style="color:var(--err);font-weight:700">⛔ Không đăng được ('+esc(g.post_block.r)+') lúc '+esc(String(g.post_block.t).slice(5,16))+(g.post_block.nj?' • nhóm chưa tham gia':'')+' → hãy tham gia nhóm hoặc bỏ chọn nhóm này.</span>':'')+((g.scan_error&&sc=='LỖI')?'<span class="note" style="color:var(--err)">'+esc(String(g.scan_error).slice(0,120))+'</span>':'')+'</div></label>'}
-          const R={about(){},bump(){bumpRender()},groups(){const rows=gRows(),G=S.groups;const j=G.filter(g=>g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified).length,nj=G.filter(g=>g.membership_status=='CHƯA THAM GIA'&&g.membership_verified).length,vc=G.filter(g=>g.member_count_verified&&g.members_num>0).length;
+          const R={about(){},ident(){R.id()},groups(){const rows=gRows(),G=S.groups;const j=G.filter(g=>g.membership_status=='ĐÃ THAM GIA'&&g.membership_verified).length,nj=G.filter(g=>g.membership_status=='CHƯA THAM GIA'&&g.membership_verified).length,vc=G.filter(g=>g.member_count_verified&&g.members_num>0).length;
             {const a=G.filter(g=>g.membership_status=='ĐÃ THAM GIA').length,gt=S.set.gtab||'j',sj=$('#gTj'),sn=$('#gTn');if(sj)sj.textContent=a;if(sn)sn.textContent=G.length-a;document.querySelectorAll('#gSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t==gt))}
             $('#gSum').textContent=G.length+' nhóm • hiện '+rows.length+' • đã TG '+j+' • chưa TG '+nj+' • chưa XM '+(G.length-j-nj)+' • đã xóa '+S.trash.length+(S.syncSig?' • MÃ ĐỐI CHIẾU '+S.syncSig.h+' ('+S.syncSig.n+' nhóm)':'');
             $('#gList').innerHTML=rows.slice(0,shownN).map((r,n)=>swWrap(r[1],gItem(r[1],n+1,SEL.has(gk(r[1].url)),"A.tg('"+gk(r[1].url).replace(/'/g,'')+"',this.checked)"))).join('')+(rows.length>shownN?'<button class="g" style="width:100%" onclick="shownN+=80;R.groups()">Hiện thêm ('+(rows.length-shownN)+')</button>':'')||'<div class="card"><small>Chưa có nhóm. Bấm “Đồng bộ nhóm của tôi”.</small></div>';nbadge();{const e=$('#gSelN');if(e)e.textContent='Đã chọn '+SEL.size+' / '+rows.length+' nhóm đang hiện'}},
@@ -1571,11 +1438,11 @@ jobs:
            msg(){const el=$('#mList');if(!el)return;const q=nfd((($('#mQ')||{}).value)||'').toLowerCase().trim();const th=M.threads.filter(x=>!q||nfd(x.name+' '+x.prev).toLowerCase().includes(q));
           el.innerHTML=th.map(x=>'<div class="mi'+(x.unread?' un':'')+'" data-id="'+esc(x.id)+'" data-n="'+esc(x.name)+'" data-e="'+(x.e2?1:0)+'" onclick="A.msgOpen(this)"><div class="mav">'+(x.img?'<img src="'+esc(x.img)+'" alt="">':esc((x.name||'?').trim().charAt(0).toUpperCase()))+'</div><div class="mbd"><b>'+esc(x.name)+'</b><span>'+esc(x.prev)+'</span></div><div class="mtm"><small>'+esc(x.time)+'</small>'+(x.unread?'<i class="dot"></i>':'')+'</div></div>').join('')||'<div class="card"><small>'+(M.t?'Không có cuộc trò chuyện nào':'Bấm “↻ Tải hộp thư” để lấy tin nhắn Messenger.')+'</small></div>';
           const b=$('#nav-msg b');if(b)b.textContent=M.unread?'Tin nhắn ('+M.unread+')':'Tin nhắn';const st=$('#mSt');if(st&&M.t&&!M.busy)st.textContent='Cập nhật '+M.t.slice(11)+' • '+M.threads.length+' hội thoại • '+M.unread+' chưa đọc'+(M.needPin?' • ⚠ cần mã PIN (bấm Hiện FB)':'');const au=$('#mAuto');if(au)au.checked=!!M.auto},
-           id(){const I=S.set.id||{mode:'keep'};const seg=[['personal','👤 Cá nhân'],['page','📄 Fanpage'],['keep','Giữ nguyên']].map(a=>'<button class="'+(I.mode==a[0]?'on':'')+'" data-m="'+a[0]+'" onclick="A.idMode(this.dataset.m)">'+a[1]+'</button>').join('');['idSeg','idSeg2'].forEach(k=>{const e=$('#'+k);if(e)e.innerHTML=seg});const u=$('#idUrl');if(u&&document.activeElement!==u)u.value=I.purl||I.pid||'';
-           const tx=I.mode=='page'?(I.pid?'Sẽ đăng bằng Fanpage: '+(I.pname||'')+' (ID '+I.pid+')':'⚠ Chưa nhận diện Fanpage — nhập link ở tab Tài khoản'):I.mode=='personal'?'Sẽ đăng bằng trang cá nhân':'Giữ nguyên danh tính hiện tại của Facebook (có thể lúc cá nhân, lúc Trang)';['idSt','idSt2'].forEach(k=>{const e=$('#'+k);if(e)e.textContent=tx});
-           try{if(Br())Br().session().then(s=>{const e=$('#idSt');if(e&&s)e.textContent=tx+' • Hiện tại: '+(s.iuser?'📄 Fanpage (ID '+s.iuser+')':'👤 Trang cá nhân')})}catch(e){}},
+           id(){const I=S.set.id||{mode:'personal'};if(I.mode=='keep'){I.mode='personal';S.set.id=I;sv()}const seg=[['personal','👤 Trang cá nhân'],['page','📄 Fanpage']].map(a=>'<button class="'+(I.mode==a[0]?'on':'')+'" data-m="'+a[0]+'" onclick="A.idMode(this.dataset.m)">'+a[1]+'</button>').join('');['idSeg','idSeg2','idSeg3'].forEach(k=>{const e=$('#'+k);if(e)e.innerHTML=seg});const u=$('#idUrl');if(u&&document.activeElement!==u)u.value=I.purl||I.pid||'';
+           const tx=I.mode=='page'?(I.pid?'Sẽ đăng bằng Fanpage: '+(I.pname||'')+' (ID '+I.pid+')':'⚠ Chưa nhận diện Fanpage — vào tab “Danh tính” nhập link rồi bấm “🔎 Nhận diện Fanpage”'):'Sẽ đăng bằng trang cá nhân';['idSt','idSt2','idSt3'].forEach(k=>{const e=$('#'+k);if(e)e.textContent=tx});
+           try{if(Br())Br().session().then(s=>{if(s)['idSt','idSt2','idSt3'].forEach(k=>{const e=$('#'+k);if(e)e.textContent=tx+' • Hiện tại: '+(s.iuser?'📄 Fanpage (ID '+s.iuser+')':'👤 Trang cá nhân')})})}catch(e){}},
            acc(){R.id();const a=S.acc;$('#aT').textContent=a?(a.ok?'● Đã đăng nhập Facebook'+(a.uid?' • ID '+a.uid:''):'● Chưa đăng nhập'):'Chưa kiểm tra đăng nhập';$('#sBg').checked=!!S.set.bg;$('#sFb').checked=!!S.set.showFb;$('#sJ1').value=S.set.j1;$('#sJ2').value=S.set.j2;$('#sTh').value=S.set.theme;$('#aV').textContent='FACEBOOK AUTUPRO - LÊ HIẾU 093579.1000 • v'+VER+' • build '+BUILD+(Br()?' • trình duyệt nhúng: sẵn sàng':' • THIẾU plugin trình duyệt');$('#lg').textContent=S.log.slice(-70).join('\n')},
-           all(){R.groups();R.trash();R.find();R.camp();R.queue();R.hist();R.eng();R.bump();R.msg();R.acc();tick()}};
+           all(){R.groups();R.trash();R.find();R.camp();R.queue();R.hist();R.eng();R.msg();R.acc();tick()}};
           function nbadge(){const b=$('#nav-trash b');if(b)b.textContent=S.trash.length?'Đã xóa '+S.trash.length:'Đã xóa'}
           (function(){const q=R.queue;let tm=0;R.queue=function(){if(tm)return;tm=setTimeout(()=>{tm=0;if(document.hidden)return;const pg=$('#pg-camp');if(pg&&pg.classList.contains('on'))q()},700)};R.queueNow=()=>q()})();
           /* ---------- lịch âm / dương, đếm ngược Tết ---------- */
@@ -1672,7 +1539,7 @@ jobs:
             while(Date.now()-t0<600000&&!stopReq){await W(2000);const s=await Br().session();if(s.loggedIn){await W(1500);S.acc={ok:true,uid:s.uid,t:Date.now()};sv();await Br().closeWeb();R.acc();tick();toast('Đăng nhập thành công ✓');return}}
             try{await Br().closeWeb()}catch(e){}await A.chk()},
            async chk(){if(!Br())return;const bad=await needLogin();R.acc();tick();toast(bad?'Chưa đăng nhập Facebook':'Đã đăng nhập ✓')},
-           idMode(m){S.set.id=Object.assign(S.set.id||{},{mode:m});sv();R.id();if(m=='page'&&!(S.set.id.pid))toast('Hãy nhập link Fanpage rồi bấm “Nhận diện Fanpage”')},
+           idMode(m){S.set.id=Object.assign(S.set.id||{},{mode:m});sv();R.id();if(m=='page'&&!(S.set.id.pid)){toast('Vào tab Danh tính để nhập link Fanpage');P('ident')}},
            async idResolve(){const u=($('#idUrl').value||'').trim();if(!u)return toast('Nhập link hoặc ID Fanpage');
            if(/^\d{6,}$/.test(u)){S.set.id=Object.assign(S.set.id||{},{pid:u,purl:'',mode:'page'});sv();R.id();return toast('Đã lưu ID Fanpage '+u)}
            const url=/^https?:/i.test(u)?u:'https://www.facebook.com/'+u.replace(/^.*facebook\.com\//i,'');
@@ -1701,135 +1568,11 @@ jobs:
           function shB(h){$('#shB').innerHTML=h;$('#sheet').classList.add('on')}
           function theme(){const t=S.set.theme;document.documentElement.dataset.th=t=='auto'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):t}
           /* ---------- điều hướng ---------- */
-          const ICON={about:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',groups:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M9 4v16"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',find:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>',camp:'<path d="M4 20l4-1 11-11-3-3L5 16z"/>',hist:'<path d="M3 12a9 9 0 109-9 9 9 0 00-7 3M3 4v5h5M12 8v5l3 2"/>',eng:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',bump:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',msg:'<path d="M21 12a8 8 0 01-11.5 7.2L3 21l1.8-5.5A8 8 0 1121 12z"/>'};
-          const TABS=[['groups','Nhóm FB'],['trash','Đã xóa'],['find','Tìm nhóm'],['camp','Đăng bài'],['bump','Comment'],['hist','Lịch sử'],['eng','Tương tác'],['about','Giới thiệu']];
+          const ICON={ident:'<circle cx="9" cy="8" r="3.5"/><path d="M3.5 20c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5"/><path d="M15.5 8.5l5 3-5 3"/>',about:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',groups:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M9 4v16"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',find:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>',camp:'<path d="M4 20l4-1 11-11-3-3L5 16z"/>',hist:'<path d="M3 12a9 9 0 109-9 9 9 0 00-7 3M3 4v5h5M12 8v5l3 2"/>',eng:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',msg:'<path d="M21 12a8 8 0 01-11.5 7.2L3 21l1.8-5.5A8 8 0 1121 12z"/>'};
+          const TABS=[['groups','Nhóm FB'],['trash','Đã xóa'],['find','Tìm nhóm'],['camp','Đăng bài'],['ident','Danh tính'],['hist','Lịch sử'],['eng','Tương tác'],['about','Giới thiệu']];
           $('#nav').innerHTML=TABS.map(t=>'<button id="nav-'+t[0]+'" onclick="P(\''+t[0]+'\')"><svg viewBox="0 0 24 24">'+ICON[t[0]]+'</svg><b style="font-weight:600">'+t[1]+'</b></button>').join('');
-          function dock(k){const d=$('#dock');if(!d)return;const H={groups:'<small id="gSelN" style="display:block;text-align:center;margin-bottom:4px"></small><div class="grid2"><button class="g s" onclick="A.selAll(1)">Chọn đang lọc</button><button class="g s" onclick="A.selAll(0)">Bỏ chọn</button><button class="s" onclick="A.joinSel()">＋ Yêu cầu tham gia</button><button class="r s" onclick="A.delSel()">Xóa đã chọn</button></div>',find:'<small id="fSelN" style="display:block;text-align:center;margin-bottom:4px"></small><div class="grid3"><button class="g s" onclick="A.fSel()">Chọn tất cả</button><button class="g s" onclick="A.fClr()">Bỏ chọn</button><button class="s" onclick="A.fJoin()">Gửi yêu cầu vào</button></div>',camp:'<button class="run" onclick="A.campRun()">▶ CHẠY <span id="cRunN"></span></button>',bump:(BPS()=='fl'?'<button class="run" onclick="A.flRun()">▶ CHẠY FL CHÉO <span id="flRunN"></span></button>':'<button class="run" onclick="A.bumpRun()">▶ ĐẨY BÀI <span id="bpRunN"></span></button>')}[k];d.innerHTML=H||'';d.classList.toggle('on',!!H);if(k=='groups'){const e=$('#gSelN');if(e)e.textContent='Đã chọn '+SEL.size+' / '+gRows().length+' nhóm đang hiện'}if(k=='camp'){const e=$('#cRunN');if(e){const n=campGroups(campRead()).length;e.textContent=n?'• '+n+' nhóm':''}}if(k=='find'){const e=$('#fSelN');if(e)e.textContent='Đã chọn '+FSEL.size+' / '+FR.length+' nhóm'}if(k=='bump')bumpDockN()}
+          function dock(k){const d=$('#dock');if(!d)return;const H={groups:'<small id="gSelN" style="display:block;text-align:center;margin-bottom:4px"></small><div class="grid2"><button class="g s" onclick="A.selAll(1)">Chọn đang lọc</button><button class="g s" onclick="A.selAll(0)">Bỏ chọn</button><button class="s" onclick="A.joinSel()">＋ Yêu cầu tham gia</button><button class="r s" onclick="A.delSel()">Xóa đã chọn</button></div>',find:'<small id="fSelN" style="display:block;text-align:center;margin-bottom:4px"></small><div class="grid3"><button class="g s" onclick="A.fSel()">Chọn tất cả</button><button class="g s" onclick="A.fClr()">Bỏ chọn</button><button class="s" onclick="A.fJoin()">Gửi yêu cầu vào</button></div>',camp:'<button class="run" onclick="A.campRun()">▶ CHẠY <span id="cRunN"></span></button>'}[k];d.innerHTML=H||'';d.classList.toggle('on',!!H);if(k=='groups'){const e=$('#gSelN');if(e)e.textContent='Đã chọn '+SEL.size+' / '+gRows().length+' nhóm đang hiện'}if(k=='camp'){const e=$('#cRunN');if(e){const n=campGroups(campRead()).length;e.textContent=n?'• '+n+' nhóm':''}}if(k=='find'){const e=$('#fSelN');if(e)e.textContent='Đã chọn '+FSEL.size+' / '+FR.length+' nhóm'}}
            function P(k){document.body.dataset.tab=k;document.querySelectorAll('.pg').forEach(e=>e.classList.toggle('on',e.id=='pg-'+k));TABS.forEach(t=>$('#nav-'+t[0]).classList.toggle('on',t[0]==k));$('#main').scrollTop=0;(R[k]||R.all)();if(k=='camp')R.queueNow();dock(k)}
-          /* ---------- Comment đẩy bài & FL chéo ---------- */
-          const BPD={text:'HÀNG TỐT- GIÁ CẠNH TRANH- BH 12 THÁNG',hrs:6,day:1,per:'3',max:20,d1:45,d2:90,log:{}};
-          const FLD={text:'FL chéo nha mn',groups:'',posts:1,maxF:0,maxR:150,gd1:45,gd2:90,f1:2,f2:5,daily:300,author:false,rep:false,v2:1,log:{},flog:[]};
-          let BSEL=new Set(),FLSEL=new Set();
-          function BP(){if(!S.bump)S.bump=JSON.parse(JSON.stringify(BPD));else for(const k in BPD)if(S.bump[k]===undefined)S.bump[k]=JSON.parse(JSON.stringify(BPD[k]));if(S.bump.text==='{Up|Up up|Đẩy bài|Lên top nào} {nha mn|nhé cả nhà|nè}')S.bump.text=BPD.text;return S.bump}
-          function FL(){if(!S.fl)S.fl=JSON.parse(JSON.stringify(FLD));else{const old=!S.fl.v2;for(const k in FLD)if(S.fl[k]===undefined)S.fl[k]=JSON.parse(JSON.stringify(FLD[k]));if(old){S.fl.v2=1;S.fl.posts=1;S.fl.maxF=0;S.fl.maxR=150;S.fl.daily=300}}return S.fl}
-          function BPS(){return S.set.bseg||'bp'}
-          const flUrls=()=>[...new Set(String(FL().groups||'').split(/\s+/).map(x=>canon(cleanUrl(x))).filter(Boolean))];
-          const tplSplit=t=>String(t||'').split(/\n\s*---+\s*\n/).map(x=>x.trim()).filter(Boolean);
-          function bumpRows(){const b=BP(),days=+b.per||0,cut=days==1?Date.parse(now().slice(0,10)+'T00:00:00'):days?Date.now()-days*864e5:0,seen=new Set(),rows=[],t=Date.now(),td=now().slice(0,10);
-          for(const h of S.hist){if(!(h.kind=='Đăng bài'||h.kind=='Chia sẻ')||!(sOK(h.status)||sPend(h.status)))continue;const key=h.link||('h:'+h.id);if(seen.has(key))continue;seen.add(key);const ts=Date.parse(String(h.time).replace(' ','T'));if(cut&&ts<cut)continue;
-          const lg=b.log[key]||{n:0,t:0,days:{}},todayN=(lg.days&&lg.days[td])||0,since=(t-Math.max(ts,lg.t||0))/36e5;let why='';
-          if(todayN>=b.day)why='đã đủ '+b.day+' lần hôm nay';else if(since<b.hrs)why='chờ thêm '+(Math.ceil((b.hrs-since)*10)/10)+'h';
-          rows.push({h,link:h.link||'',key,lg,ok:!why,why,since,nolink:!h.link,pend:!sOK(h.status)})}
-          return rows}
-          function bumpDockN(){const e=$('#bpRunN'),f=$('#flRunN');if(e)e.textContent=BSEL.size?'• '+BSEL.size+' bài':'';if(f){const n=flUrls().length;f.textContent=n?'• '+n+' nhóm':''}}
-          function bumpRender(){const b=BP(),fl=FL(),seg=BPS();
-          document.querySelectorAll('#bSeg button').forEach(x=>x.classList.toggle('on',x.dataset.s==seg));
-          const pp=$('#bpP'),fp=$('#flP');if(!pp||!fp)return;pp.style.display=seg=='bp'?'block':'none';fp.style.display=seg=='fl'?'block':'none';
-          const put=(id,v)=>{const e=$('#'+id);if(e&&document.activeElement!==e)e.value=v};
-          put('bpTx',b.text);put('bpHrs',b.hrs);put('bpDay',b.day);put('bpPer',b.per);put('bpMax',b.max);put('bpD1',b.d1);put('bpD2',b.d2);
-          put('flTx',fl.text);put('flGr',fl.groups);put('flPosts',fl.posts);put('flMaxF',fl.maxF);put('flMaxR',fl.maxR);put('flD1',fl.gd1);put('flD2',fl.gd2);put('flF1',fl.f1);put('flF2',fl.f2);put('flDaily',fl.daily);{const e=$('#flAuth');if(e)e.checked=!!fl.author}{const e=$('#flRep');if(e)e.checked=!!fl.rep}
-          const rows=bumpRows();BSEL.forEach(k=>{if(!rows.find(r=>r.key==k&&r.ok))BSEL.delete(k)});
-          const ago=t=>{if(!t)return'';const h=(Date.now()-t)/36e5;return h<1?Math.max(1,Math.round(h*60))+' phút trước':h<48?Math.round(h)+'h trước':Math.round(h/24)+' ngày trước'};
-          const totAll=S.hist.filter(h=>(h.kind=='Đăng bài'||h.kind=='Chia sẻ')&&(sOK(h.status)||sPend(h.status))).length;
-          $('#bpList').innerHTML=rows.map(r=>'<label class="gi '+(r.ok?'':'uv')+'"><input type="checkbox" data-k="'+esc(r.key)+'" '+(BSEL.has(r.key)?'checked ':'')+(r.ok?'':'disabled ')+'onchange="A.bsel(this.dataset.k,this.checked)"><div class="gb"><b class="lk" data-u="'+esc(r.h.gurl||r.link)+'" onclick="A.openG(this.dataset.u,event)">'+esc(r.h.target)+' ↗</b><small>'+esc(String(r.h.time).slice(5,16))+' • '+esc(r.h.kind)+(r.h.txt?' • '+esc(String(r.h.txt).slice(0,50)):'')+'</small><div class="chips">'+(r.ok?chip('SẴN SÀNG ĐẨY','ok'):chip(r.why,'wt'))+(r.pend?chip('CHỜ DUYỆT','wt'):'')+(r.nolink?chip('CHƯA CÓ LINK • tự tìm khi chạy','bl'):'')+(r.lg.n?chip('💬 đã đẩy '+r.lg.n+' lần','bl')+(r.lg.t?chip(ago(r.lg.t),''):''):'')+'</div></div></label>').join('')||'<div class="card"><small>Không có bài nào trong khoảng “Bài đăng trong” đang chọn. Lịch sử hiện có '+totAll+' bài đăng/chia sẻ thành công hoặc chờ duyệt (mọi thời gian) — thử chọn khoảng thời gian dài hơn.</small></div>';
-          const urls=flUrls(),td=now().slice(0,10),dl=fl.log[td]||{follow:0,comment:0};
-          const gn=$('#flGn');if(gn)gn.textContent=urls.length?urls.length+' nhóm: '+urls.slice(0,6).map(u=>{const g=S.groups.find(x=>gk(x.url)==gk(u));return(g&&g.name)||gk(u)}).join(', ')+(urls.length>6?'…':''):'Chưa có nhóm nào.';
-          const fd=$('#flDay');if(fd)fd.textContent='Hôm nay: đã comment '+dl.comment+' bài • đã theo dõi '+dl.follow+'/'+fl.daily+' tài khoản • lịch sử lưu '+((fl.flog||[]).length)+' người. Theo dõi quá dày dễ bị Facebook hạn chế.';
-          if(document.body.dataset.tab=='bump')dock('bump')}
-          Object.assign(A,{
-          bseg(v){S.set.bseg=v;sv();R.bump()},
-          bsel(k,on){if(on)BSEL.add(k);else BSEL.delete(k);bumpDockN()},
-          bselAll(on){BSEL.clear();if(on){const m=BP().max;bumpRows().filter(r=>r.ok).slice(0,m).forEach(r=>BSEL.add(r.key))}R.bump()},
-          bpSave(){const b=BP(),g=id=>($('#'+id)||{}).value;b.text=g('bpTx');b.hrs=Math.max(0,+g('bpHrs')||0);b.day=Math.max(1,+g('bpDay')||1);b.per=g('bpPer')||'3';b.max=Math.max(1,+g('bpMax')||20);b.d1=Math.max(10,+g('bpD1')||45);b.d2=Math.max(b.d1,+g('bpD2')||90);sv()},
-          flSave(){const f=FL(),g=id=>($('#'+id)||{}).value;f.text=g('flTx');f.groups=g('flGr');f.posts=Math.max(1,Math.min(5,+g('flPosts')||1));f.maxF=Math.max(0,+g('flMaxF')||0);f.maxR=Math.max(1,+g('flMaxR')||150);f.gd1=Math.max(10,+g('flD1')||45);f.gd2=Math.max(f.gd1,+g('flD2')||90);f.f1=Math.max(1,+g('flF1')||2);f.f2=Math.max(f.f1,+g('flF2')||5);f.daily=Math.max(1,+g('flDaily')||300);f.author=!!($('#flAuth')||{}).checked;f.rep=!!($('#flRep')||{}).checked;sv();bumpDockN()},
-          flAddSel(){const f=FL(),have=new Set(flUrls().map(gk)),add=[];for(const g of S.groups){const k=gk(g.url);if(SEL.has(k)&&!have.has(k)){add.push(canon(g.url)||g.url);have.add(k)}}if(!add.length)return toast('Chưa tích nhóm nào ở tab Nhóm FB. Hãy bấm “📋 Chọn từ danh sách”.');f.groups=(String(f.groups||'').trim()+'\n'+add.join('\n')).trim();sv();R.bump();toast('Đã thêm '+add.length+' nhóm')},
-          flClr(){if(!confirm('Xóa toàn bộ danh sách nhóm FL chéo?'))return;FL().groups='';sv();R.bump()},
-          flPick(){if(!S.groups.length)return alert('Chưa có nhóm nào trong app. Vào tab Nhóm FB bấm “Đồng bộ nhóm của tôi” trước.');
-          FLSEL=new Set(flUrls().map(gk));const bl=blockedKeys();
-          const rows=S.groups.filter(g=>!bl.has(gk(g.url))).map(g=>[g,mnum(g),g.membership_status=='ĐÃ THAM GIA'?1:0]).sort((a,b)=>b[2]-a[2]||b[1]-a[1]||String(a[0].name||'').localeCompare(String(b[0].name||'')));
-          shB('<div style="position:sticky;top:0;z-index:4;background:var(--card);margin:-14px -14px 8px;padding:12px 14px 8px;border-bottom:1px solid var(--line)"><div class="row"><h2 style="margin:0">Chọn nhóm FL chéo</h2><b class="fx" id="flpN" style="color:var(--acc)"></b></div><input type="text" inputmode="search" enterkeyhint="search" autocorrect="off" spellcheck="false" id="flpQ" class="srch" placeholder="🔎 Tìm nhóm theo tên / link…" oninput="A.flpFind(this.value)" autocomplete="off" autocapitalize="off"><div class="row" style="margin-top:6px"><small id="flpQn" class="fx"></small></div><div class="grid3" style="margin-top:8px"><button class="g s" onclick="A.flpVis(1)">Chọn kết quả</button><button class="g s" onclick="A.flpVis(0)">Bỏ kết quả</button><button class="s" onclick="A.flpDone()">Xong</button></div></div><div id="flpL">'+rows.map(([g,n,j],i)=>{const k=gk(g.url),q=(String(g.name||'')+' '+g.url).toLowerCase();return'<label class="gi" data-u="'+esc(g.url)+'"><input type="checkbox" data-k="'+esc(k)+'" '+(FLSEL.has(k)?'checked ':'')+'onchange="A.flp(this.dataset.k,this.checked)"><div class="gb"><b>'+(i+1)+'. '+esc(g.name||g.url)+'</b><small>'+(n?n.toLocaleString('vi'):esc(g.members||'—'))+' thành viên</small><div class="chips">'+chip(j?'ĐÃ THAM GIA':String(g.membership_status||'CHƯA XÁC MINH'),j?'ok':'wt')+'</div></div></label>'}).join('')+'</div>');A.flpN()},
-          flpN(){const e=$('#flpN');if(e)e.textContent='Đã chọn '+FLSEL.size},
-          flp(k,on){if(on)FLSEL.add(k);else FLSEL.delete(k);A.flpN()},
-          flpFind(v){clearTimeout(A._flt);A._flt=setTimeout(()=>A.flpDo(v),70)},
-          flpDo(v){const nz=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase();const q=nz(v).trim().split(/\s+/).filter(Boolean);let n=0;document.querySelectorAll('#flpL label').forEach(l=>{const t=nz(l.textContent+' '+(l.dataset.u||''));const show=q.every(w=>t.includes(w));l.style.display=show?'':'none';if(show)n++});const e=$('#flpQn');if(e)e.textContent=q.length?n+' nhóm khớp':''},
-          flpVis(on){document.querySelectorAll('#flpL .gi').forEach(l=>{if(l.style.display==='none')return;const c=l.querySelector('input');if(c){c.checked=!!on;if(on)FLSEL.add(c.dataset.k);else FLSEL.delete(c.dataset.k)}});A.flpN()},
-          flpDone(){const f=FL(),keep=flUrls().filter(u=>!S.groups.some(g=>gk(g.url)==gk(u))),sel=S.groups.filter(g=>FLSEL.has(gk(g.url))).map(g=>canon(g.url)||g.url);f.groups=[...sel,...keep].join('\n');sv();A.close();R.bump();toast('Đã chọn '+sel.length+' nhóm FL chéo')},
-          flLog(){A._fm=A._fm||'td';shB('<div style="position:sticky;top:0;z-index:4;background:var(--card);margin:-14px -14px 8px;padding:12px 14px 8px;border-bottom:1px solid var(--line)"><div class="row"><h2 style="margin:0">📜 Lịch sử FL chéo</h2><b class="fx" id="fllN" style="color:var(--acc)"></b></div><div class="seg" id="fllS" style="margin-top:8px"></div><input type="text" inputmode="search" enterkeyhint="search" autocorrect="off" spellcheck="false" id="fllQ" class="srch" placeholder="🔎 Tìm tên người / nhóm…" oninput="A.flLogR()" autocomplete="off" autocapitalize="off"><div class="grid2" style="margin-top:8px"><button class="g s" onclick="A.flLogCopy()">⧉ Sao chép danh sách tên</button><button class="g s" style="color:#DC2626" onclick="A.flLogClr()">Xóa lịch sử FL</button></div></div><div id="fllL"></div>');A.flLogR()},
-          flLogM(m){A._fm=m;A.flLogR()},
-          flLogRows(){const nz=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase(),td=now().slice(0,10),q=nz((($('#fllQ')||{}).value||'').trim());return(FL().flog||[]).filter(x=>(A._fm=='all'||String(x.t).slice(0,10)==td)&&(!q||nz(x.name+' '+x.group).includes(q)))},
-          flLogR(){const rows=A.flLogRows(),all=FL().flog||[],td=now().slice(0,10),tdn=all.filter(x=>String(x.t).slice(0,10)==td).length,ok=rows.filter(x=>x.ok).length;
-          $('#fllS').innerHTML=[['td','Hôm nay ('+tdn+')'],['all','Tất cả ('+all.length+')']].map(a=>'<button class="'+(A._fm==a[0]?'on':'')+'" onclick="A.flLogM(\''+a[0]+'\')">'+a[1]+'</button>').join('');
-          $('#fllN').textContent=ok+' đã FL / '+rows.length;
-          $('#fllL').innerHTML=rows.slice(0,300).map(x=>'<div class="hc '+(x.ok?'ok':'er')+'"><div class="hh"><i class="hk">'+(x.ok?'✓':'✗')+'</i><div class="ht"><b>'+esc(x.name||'(không đọc được tên)')+'</b><small>'+esc(String(x.t).slice(5,16))+' • '+esc(x.group||'')+'</small></div>'+(x.url?'<button class="g s" data-u="'+esc(x.url)+'" onclick="A.openU(this.dataset.u)">↗</button>':'')+'</div></div>').join('')||'<div class="card"><small>Chưa có tài khoản nào được FL trong mục này.</small></div>'},
-          flLogCopy(){const t=A.flLogRows().filter(x=>x.ok).map(x=>x.name+(x.url?' — '+x.url:'')).join('\n');if(!t)return toast('Không có gì để sao chép');A.copy(t)},
-          flLogClr(){if(!confirm('Xóa toàn bộ lịch sử FL chéo?'))return;FL().flog=[];sv();A.flLogR();R.bump()},
-          bumpRun(){return bumpRun()},flRun(){return flRun()}});
-          function flWatch(label){let on=true;(async()=>{while(on){await W(1500);if(!on)break;if(T.stop){try{await Br().exec({code:'window.__FLSTOP=1;return 1',timeout:4})}catch(e){}break}try{const r=await Br().exec({code:"try{return JSON.parse(window.__AST||'null')}catch(e){return null}",timeout:4});const v=r&&r.value?JSON.parse(r.value):null;if(v&&v.m&&on)prog(label+' • '+v.m,null,null)}catch(e){}}})();return()=>{on=false}}
-          function flLogAdd(x){const f=FL();f.flog=f.flog||[];f.flog.unshift(Object.assign({t:now()},x));if(f.flog.length>3000)f.flog.length=3000}
-          async function bumpRun(){A.bpSave();const b=BP(),rows=bumpRows().filter(r=>BSEL.has(r.key)&&r.ok),tpls=tplSplit(b.text);
-          if(!rows.length)return toast('Chưa chọn bài nào đủ điều kiện để đẩy');if(!tpls.length)return alert('Chưa có nội dung comment.');
-          const list=rows.slice(0,b.max),nl=list.filter(r=>r.nolink).length;
-          if(!confirm('Comment đẩy '+list.length+' bài'+(nl?' ('+nl+' bài chưa có link sẽ tự tìm link trước)':'')+'.\nNghỉ '+b.d1+'-'+b.d2+'s giữa các bài.\n\nLưu ý: comment quá dày hoặc giống hệt nhau dễ bị Facebook hạn chế. Tiếp tục?'))return;
-          return task('Comment đẩy '+list.length+' bài',async()=>{let ok=0,bad=0,blk=0;
-          for(let i=0;i<list.length&&!T.stop;i++){const r=list[i];if(T.pause)await holdPause(null);if(T.stop)break;
-          prog(r.h.target,i,list.length);let key=r.key,link=r.link,res={r:'LỖI',d:''},text='';
-          try{if(!link){prog('Tìm link bài: '+r.h.target,i,list.length);await verifyCore([r.h]);link=r.h.link||'';if(link){b.log[link]=b.log[key]||b.log[link]||{n:0,t:0,days:{},last:''};key=link}}
-          const lg=(b.log[key]=b.log[key]||{n:0,t:0,days:{},last:''});
-          if(!link)res={r:'CHƯA CÓ LINK',d:'không tìm thấy bài của bạn trong nhóm (bài có thể chưa được duyệt)'};
-          else{let pool=tpls.filter(x=>x!==lg.last);if(!pool.length)pool=tpls;const raw=pool[Math.floor(Math.random()*pool.length)];text=spin(raw);await nav(link,2200);res=await run(pg_comment,{text},150)||res;
-          if(res.r=='OK'||res.r=='CHƯA XÁC NHẬN'){lg.n++;lg.t=Date.now();lg.last=raw;const td=now().slice(0,10);lg.days=lg.days||{};lg.days[td]=(lg.days[td]||0)+1}}
-          }catch(e){res={r:'LỖI',d:String(e.message||e).slice(0,140)}}
-          if(res.r=='OK'||res.r=='CHƯA XÁC NHẬN'){ok++;blk=0}else bad++;
-          H('Comment đẩy','',r.h.target,res.r,res.d||'',link||r.h.link,r.h.gurl,'',text);L('Comment đẩy: '+r.h.target+' → '+res.r);sv();RT('bump');
-          if(res.r=='BỊ CHẶN'){blk++;if(blk>=2){L('Facebook báo chặn — dừng comment đẩy');T.stop=true;break}}
-          if(i<list.length-1&&!T.stop){try{await Br().gotoUrl({url:'about:blank'})}catch(e){}try{await Br().trim()}catch(e){}const s=Math.round(b.d1+Math.random()*Math.max(0,b.d2-b.d1));for(let k=s;k>0&&!T.stop;k--){if(T.pause)await holdPause(null);if(k%5==0){prog('Nghỉ '+k+'s trước bài kế tiếp',null,null);try{await Br().setBarTitle({title:'Nghỉ '+k+'s'})}catch(e){}}await W(1000)}}}
-          lastRes='Comment đẩy • thành công '+ok+' • lỗi '+bad+(T.stop?' • đã dừng':'');BSEL.clear()},{total:list.length,pause:true})}
-          async function flRun(){A.flSave();const f=FL(),urls=flUrls(),tpls=tplSplit(f.text),td=now().slice(0,10);
-          if(!urls.length)return alert('Chưa có nhóm FL chéo. Bấm “📋 Chọn từ danh sách” hoặc dán link nhóm (mỗi dòng 1 link).');if(!tpls.length)return alert('Chưa có nội dung comment.');
-          Object.keys(f.log).sort().slice(0,-10).forEach(k=>delete f.log[k]);const lg=(f.log[td]=f.log[td]||{follow:0,comment:0});
-          if(lg.follow>=f.daily)return alert('Hôm nay đã theo dõi '+lg.follow+' tài khoản (giới hạn '+f.daily+'/ngày). Nghỉ để tránh bị Facebook hạn chế.');
-          if(!confirm('FL chéo '+urls.length+' nhóm: vào nhóm → comment bài đầu tiên → đọc bình luận → theo dõi '+(f.maxF>0?'tối đa '+f.maxF+' người/bài':'TẤT CẢ người bình luận')+' (giới hạn '+f.maxR+'/lần chạy, '+f.daily+'/ngày).\n\nMọi tài khoản được theo dõi đều lưu trong “📜 Lịch sử FL”. Theo dõi hàng loạt dễ bị Facebook hạn chế. Tiếp tục?'))return;
-          return task('FL chéo '+urls.length+' nhóm',async()=>{let tf=0,tc=0,blk=0;
-          for(let gi=0;gi<urls.length&&!T.stop&&tf<f.maxR&&lg.follow<f.daily;gi++){if(T.pause)await holdPause(null);if(T.stop)break;
-          const gu=urls[gi],g=S.groups.find(x=>gk(x.url)==gk(gu)),gname=(g&&vname(g.name))||('Nhóm '+gk(gu));prog('Mở nhóm '+gname,gi,urls.length);
-          let st='LỖI',det='',cdone=0,fdone=0,fall=0;
-          try{await nav(gu,2400);const pl=await run(pg_fl_posts,{scan:Math.max(f.posts+2,3)},120);
-          if(!pl||pl.r!='OK'){st=(pl&&pl.r)||'LỖI';det=(pl&&pl.d)||''}
-          else{const targets=pl.inline?[{link:''}]:pl.posts.slice(0,Math.max(1,f.posts));
-          for(const p of targets){if(T.stop||tf>=f.maxR||lg.follow>=f.daily)break;
-          const inline=!p.link;prog(gname+' • comment bài đầu tiên',gi,urls.length);if(p.link)await nav(p.link,2400);
-          const cr=await run(pg_comment,{text:spin(pickContent(f.text)),inline},150)||{r:'LỖI'};
-          if(cr.r=='BỊ CHẶN'){st='BỊ CHẶN';break}
-          if(cr.r=='OK'||cr.r=='CHƯA XÁC NHẬN'){cdone++;tc++;lg.comment++}else det=cr.r+(cr.d?' • '+cr.d:'');
-          const room=Math.min(f.maxF>0?f.maxF:1e9,f.maxR-tf,f.daily-lg.follow);
-          if(room>0){await sl(1500+Math.random()*1500);const stopW=flWatch(gname);let fr=null;
-          try{fr=await run(pg_follow,{max:room,author:f.author,replies:f.rep,inline,f1:f.f1*1000,f2:f.f2*1000,tmax:840000},900)}catch(e){det=(det?det+' • ':'')+'FL lỗi: '+String(e.message||e).slice(0,100)}finally{stopW()}
-          if(fr){fdone+=fr.followed||0;tf+=fr.followed||0;lg.follow+=fr.followed||0;fall+=fr.found||0;(fr.people||[]).forEach(x=>flLogAdd({name:x.name,url:x.url,ok:x.ok,group:gname,gurl:gu,post:p.link||''}));sv();
-          if(fr.r=='BỊ CHẶN'){st='BỊ CHẶN';break}if(fr.r=='KHÔNG CÓ AI ĐỂ THEO DÕI')det=(det?det+' • ':'')+'không có ai cần theo dõi trong bài';if(/^KHÔNG THẤY/.test(fr.r||''))det=(det?det+' • ':'')+(fr.d||'không thấy nút Theo dõi')}
-
-          if(!T.stop&&st!='BỊ CHẶN'&&(!fr||!fr.found)&&tf<f.maxR&&lg.follow<f.daily){
-          const need=Math.min(room,f.maxR-tf,f.daily-lg.follow);prog(gname+' • đọc người bình luận',gi,urls.length);
-          let pc=null;try{pc=await run(pg_commenters,{max:Math.min(need*2,400),replies:f.rep,self:(S.acc&&S.acc.uid)||'',tmax:240000},300)}catch(e){det=(det?det+' • ':'')+'Đọc bình luận lỗi: '+String(e.message||e).slice(0,80)}
-          const done0=new Set((f.flog||[]).filter(x=>x.ok&&x.url).map(x=>x.url)),ppl=((pc&&pc.people)||[]).filter(x=>x.url&&!done0.has(x.url)).slice(0,need);
-          if(pc&&pc.r=='BỊ CHẶN')st='BỊ CHẶN';
-          else if(!ppl.length)det=(det?det+' • ':'')+'không đọc được người bình luận mới nào'+(pc&&pc.d?' • '+pc.d:'');
-          else{L('FL chéo: mở từng trang cá nhân, '+ppl.length+' người');
-          for(let pi=0;pi<ppl.length&&!T.stop&&tf<f.maxR&&lg.follow<f.daily;pi++){const x=ppl[pi];prog(gname+' • theo dõi '+(pi+1)+'/'+ppl.length+' • '+x.name,gi,urls.length);
-          let r2=null;try{await nav(x.url,2000);r2=await run(pg_pfollow,null,50)}catch(e){r2={r:'LỖI'}}
-          fall++;const okF=!!(r2&&r2.r=='OK'),okA=!!(r2&&r2.r=='ĐÃ THEO DÕI TRƯỚC');if(okF){fdone++;tf++;lg.follow++}
-          flLogAdd({name:x.name,url:x.url,ok:okF||okA,group:gname,gurl:gu,post:p.link||''});sv();
-          if(r2&&r2.r=='BỊ CHẶN'){st='BỊ CHẶN';break}
-          if(r2&&/^KHÔNG/.test(r2.r)&&pi<3)det=(det?det+' • ':'')+(x.name+': '+r2.r+(r2.d?' ('+r2.d.slice(0,80)+')':''));
-          await sl(f.f1*1000+Math.random()*Math.max(0,(f.f2-f.f1)*1000)+1500)}}}
-          }
-          await sl(1500)}
-          if(st!='BỊ CHẶN')st=(cdone||fdone)?'OK':(det?'LỖI':'KHÔNG CÓ BÀI PHÙ HỢP')}
-          }catch(e){st='LỖI';det=String(e.message||e).slice(0,140)}
-          H('FL chéo','',gname,st,'comment '+cdone+' bài • theo dõi '+fdone+'/'+fall+' tài khoản'+(det?' • '+det:''),'',gu,'',String(f.text||'').slice(0,120));
-          L('FL chéo: '+gname+' → '+st+' (comment '+cdone+', theo dõi '+fdone+')');sv();RT('bump');
-          if(st=='BỊ CHẶN'){blk++;if(blk>=2){L('Facebook báo chặn — dừng FL chéo');T.stop=true;break}}else blk=0;
-          if(gi<urls.length-1&&!T.stop&&tf<f.maxR){try{await Br().gotoUrl({url:'about:blank'})}catch(e){}try{await Br().trim()}catch(e){}const s=Math.round(f.gd1+Math.random()*Math.max(0,f.gd2-f.gd1));for(let k=s;k>0&&!T.stop;k--){if(T.pause)await holdPause(null);if(k%5==0){prog('Nghỉ '+k+'s trước nhóm kế tiếp',null,null);try{await Br().setBarTitle({title:'Nghỉ '+k+'s'})}catch(e){}}await W(1000)}}}
-          lastRes='FL chéo • comment '+tc+' bài • theo dõi '+tf+' tài khoản'+(T.stop?' • đã dừng':'')},{total:urls.length,pause:true})}
           /* ---------- Messenger ---------- */
           async function pg_msg_list(A){for(let i=0;i<24&&!document.querySelector('a[href*="/messages/t/"],a[href*="/messages/e2ee/t/"]');i++)await A.sl(500);await A.sl(600);
           const body=(document.body?document.body.innerText:''),has=!!document.querySelector('a[href*="/messages/t/"],a[href*="/messages/e2ee/t/"]');const needPin=!has&&/(nhập mã pin|enter your pin|khôi phục tin nhắn|restore your chats|mã pin)/i.test(body);
@@ -1921,6 +1664,7 @@ jobs:
           L.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;sw=e.target.closest('.sw')},{passive:true});
           L.addEventListener('touchend',e=>{if(!sw)return;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.5){if(dx<0){document.querySelectorAll('#gList .sw.open').forEach(x=>{if(x!==sw)x.classList.remove('open','ask')});sw.classList.add('open')}else sw.classList.remove('open','ask')}sw=null},{passive:true})})();
           </script></body></html>
+
           AUTU_EOF
           sed -i '' "s/__BUILD__/${GITHUB_RUN_NUMBER}/g; s/__VER__/${APP_VERSION}/g" www/index.html
           sed -i '' "s/__VER__/${APP_VERSION}/g" package.json plugin/package.json
